@@ -1,5 +1,5 @@
 {
-  "name": "x-webaap",
+  "name": "x-webapp",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
     "buffer": "^6.0.3",
+    "primereact": "^10.9.7",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hot-toast": "^2.6.0",
