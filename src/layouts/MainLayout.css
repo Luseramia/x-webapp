@@ -1,0 +1,56 @@
+/* Existing styles from App.css or index.css might conflict, but here is layout specific CSS */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: var(--primary-bg, white);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.main-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+
+
+.nav-link {
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+    color: #4CAF50; /* Adjust to preferred theme color */
+}
+
+.nav-link.active {
+    color: #4CAF50;
+    border-bottom: 2px solid #4CAF50;
+    padding-bottom: 2px;
+}
+
+.logout-button {
+    background: transparent;
+    border: 1px solid #ff4d4f;
+    color: #ff4d4f;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logout-button:hover {
+    background: #ff4d4f;
+    color: white;
+}

@@ -1,0 +1,63 @@
+:root{
+    background-color: white;
+}
+
+.home-menu-container {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.home-title {
+    font-size: 2rem;
+    color: var(--text-color, #333);
+    margin-bottom: 2rem;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.menu-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #eaeaea;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.menu-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    border-color: #d1d1d1;
+}
+
+.card-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.menu-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #222;
+}
+
+.menu-card p {
+    color: #666;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+/* Optional: specific styles for cards if desired */
+.upload-card:hover { border-color: #4CAF50; }
+.finance-card:hover { border-color: #2196F3; }

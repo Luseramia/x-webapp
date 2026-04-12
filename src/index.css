@@ -1,2 +1,9 @@
 @import "tailwindcss";
 
+@theme {
+  --color-bg-primary: #ffffff;
+  --color-text-primary: #111827;
+  --color-purple-primary: #7c3aed;
+  --color-purple-hover: #6d28d9;
+}
+
