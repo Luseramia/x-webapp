@@ -14,7 +14,6 @@ const CHART_OPTIONS: { value: ChartType; label: string }[] = [
   { value: "bar", label: "แท่ง (Bar)" },
   { value: "line", label: "เส้น (Line)" },
 ];
-
 const MONTHS = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน",
   "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
