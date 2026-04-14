@@ -4,6 +4,8 @@ import VideoUpload from '../components/VideoUpload';
 import Login from '../components/login/login';
 import HomeMenu from '../components/home/HomeMenu';
 import IncomeExpense from '../components/income-expense';
+import BankStatement from '../components/bank-statement';
+import Dashboard from '../components/dashboard';
 import VideoPlayer from '../components/video-player';
 import VideoFeed from '../components/video-feed';
 
@@ -30,6 +32,14 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ isLoggedIn, onLogin }) => {
             <Route
                 path="/income-expense"
                 element={isLoggedIn ? <IncomeExpense /> : <Navigate to="/login" />}
+            />
+            <Route
+                path="/bank-statement"
+                element={isLoggedIn ? <BankStatement /> : <Navigate to="/login" />}
+            />
+            <Route
+                path="/dashboard"
+                element={isLoggedIn ? <Dashboard /> : <Navigate to="/login" />}
             />
             <Route
                 path="/watch"

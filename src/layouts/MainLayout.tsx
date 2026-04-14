@@ -14,7 +14,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, isLoggedIn, onLogout 
             <header className="app-header">
                 <div className="logo-section">
                     <span className="logo-sparkle">✨</span>
-                    <h1>Video Portal</h1>
+                    <h1>X-WEBAPP</h1>
                 </div>
                 {isLoggedIn && (
                     <nav className="main-nav">
@@ -26,6 +26,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, isLoggedIn, onLogout 
                         </NavLink>
                         <NavLink to="/income-expense" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                             รายรับ-รายจ่าย
+                        </NavLink>
+                        <NavLink to="/bank-statement" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                            รายการเดินบัญชี
+                        </NavLink>
+                        <NavLink to="/dashboard" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                            แดชบอร์ด
                         </NavLink>
                         <button className="logout-button" onClick={onLogout}>
                             ออกจากระบบ
