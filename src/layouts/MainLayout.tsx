@@ -21,14 +21,20 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, isLoggedIn, onLogout 
                         <NavLink to="/home" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                             หน้าหลัก
                         </NavLink>
-                        <NavLink to="/upload" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                            อัปโหลดวิดีโอ
-                        </NavLink>
-                        <NavLink to="/income-expense" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                        {/* <NavLink to="/income-expense" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                             รายรับ-รายจ่าย
-                        </NavLink>
+                        </NavLink> */}
                         <NavLink to="/bank-statement" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                             รายการเดินบัญชี
+                        </NavLink>
+                        <NavLink to="/file-upload" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                            อัปโหลดไฟล์
+                        </NavLink>
+                        <NavLink to="/my-files" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                            ไฟล์ของฉัน
+                        </NavLink>
+                        <NavLink to="/public-files" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                            ไฟล์สาธารณะ
                         </NavLink>
                         <NavLink to="/dashboard" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                             แดชบอร์ด

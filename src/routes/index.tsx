@@ -1,6 +1,5 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import VideoUpload from '../components/VideoUpload';
 import Login from '../components/login/login';
 import HomeMenu from '../components/home/HomeMenu';
 import IncomeExpense from '../components/income-expense';
@@ -8,6 +7,9 @@ import BankStatement from '../components/bank-statement';
 import Dashboard from '../components/dashboard';
 import VideoPlayer from '../components/video-player';
 import VideoFeed from '../components/video-feed';
+import FileUpload from '../components/file-upload';
+import MyFiles from '../components/my-files';
+import PublicFiles from '../components/public-files';
 
 interface AppRoutesProps {
     isLoggedIn: boolean;
@@ -27,7 +29,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ isLoggedIn, onLogin }) => {
             />
             <Route
                 path="/upload"
-                element={isLoggedIn ? <VideoUpload /> : <Navigate to="/login" />}
+                element={<Navigate to="/file-upload" />}
             />
             <Route
                 path="/income-expense"
@@ -48,6 +50,18 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ isLoggedIn, onLogin }) => {
             <Route
                 path="/videos"
                 element={isLoggedIn ? <VideoFeed /> : <Navigate to="/login" />}
+            />
+            <Route
+                path="/file-upload"
+                element={isLoggedIn ? <FileUpload /> : <Navigate to="/login" />}
+            />
+            <Route
+                path="/my-files"
+                element={isLoggedIn ? <MyFiles /> : <Navigate to="/login" />}
+            />
+            <Route
+                path="/public-files"
+                element={isLoggedIn ? <PublicFiles /> : <Navigate to="/login" />}
             />
             <Route
                 path="/"

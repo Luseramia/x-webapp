@@ -5,6 +5,7 @@ import { Image } from "primereact/image";
 import IncomeExpenseService from "../../services/income-expense.service";
 import uploadFileService from "../../services/uploadfile";
 import UploadFileService from "../../services/uploadfile";
+import { errortoast, successtoast, warntoast } from "../../utilities/toast";
 
 type PreviewFile = {
   file: File;
@@ -23,7 +24,7 @@ export default function IncomeExpense() {
 
   async function sendFile() {
     if (files.length === 0) {
-      alert("กรุณาเลือกไฟล์ก่อน");
+      warntoast({ text: "กรุณาเลือกไฟล์ก่อน" });
       return;
     }
 
@@ -40,15 +41,15 @@ export default function IncomeExpense() {
       );
 
       if (response.ok) {
-        alert("ส่งไฟล์สำเร็จ!");
+        successtoast({ text: "ส่งไฟล์สำเร็จ!" });
         setFiles([]);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(`ส่งไฟล์ไม่สำเร็จ: ${errorData.message || response.statusText}`);
+        errortoast({ text: `ส่งไฟล์ไม่สำเร็จ: ${errorData.message || response.statusText}` });
       }
     } catch (error) {
       console.error("Error uploading files:", error);
-      alert("เกิดข้อผิดพลาดในการส่งไฟล์");
+      errortoast({ text: "เกิดข้อผิดพลาดในการส่งไฟล์" });
     }
   }
 

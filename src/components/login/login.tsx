@@ -68,9 +68,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       }
     } catch (error) {
       if (error instanceof Error) {
-        alert("เกิดข้อผิดพลาด: " + error.message);
+        errortoast({ text: "เกิดข้อผิดพลาด: " + error.message });
       } else {
-        alert("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ: " + String(error));
+        errortoast({ text: "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ: " + String(error) });
       }
     }
   }

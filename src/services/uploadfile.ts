@@ -34,6 +34,21 @@ export default class UploadFileService {
   }
 
 
+  async getMyFiles() {
+    return await this.globalApi.authGet("file/my-files");
+  }
+
+  async getPublicFiles() {
+    return await this.globalApi.authGet("file/public-files");
+  }
+
+  async updateFileVisibility(id: number, isPublic: boolean) {
+    return await this.globalApi.authPost(
+      "file/visibility",
+      JSON.stringify({ id, isPublic }),
+    );
+  }
+
   async uploadFile(file: FormData, fn: Dispatch<SetStateAction<any>>) {
     return await this.globalApi.uploadFile("file/upload/v2", file, fn);
   }

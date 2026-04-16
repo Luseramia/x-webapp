@@ -3,6 +3,7 @@ import Button from "../../utilities/button";
 import BankStatementService, {
   type Transaction,
 } from "../../services/bank-statement.service";
+import { errortoast, successtoast, warntoast } from "../../utilities/toast";
 
 type Step = "upload" | "review";
 
@@ -21,7 +22,7 @@ export default function BankStatement() {
 
   const handleFile = (f: File) => {
     if (f.type !== "application/pdf") {
-      alert("รองรับเฉพาะไฟล์ PDF เท่านั้น");
+      warntoast({ text: "รองรับเฉพาะไฟล์ PDF เท่านั้น" });
       return;
     }
     setFile(f);
@@ -48,7 +49,7 @@ export default function BankStatement() {
 
   const processFile = async () => {
     if (!file) {
-      alert("กรุณาเลือกไฟล์ PDF ก่อน");
+      warntoast({ text: "กรุณาเลือกไฟล์ PDF ก่อน" });
       return;
     }
 
@@ -62,7 +63,7 @@ export default function BankStatement() {
       setStep("review");
     } catch (error: any) {
       console.error("Error processing statement:", error);
-      alert(`เกิดข้อผิดพลาด: ${error.message || "ไม่สามารถประมวลผลไฟล์ได้"}`);
+      errortoast({ text: `เกิดข้อผิดพลาด: ${error.message || "ไม่สามารถประมวลผลไฟล์ได้"}` });
     } finally {
       setLoading(false);
     }
@@ -74,7 +75,7 @@ export default function BankStatement() {
 
   const saveTransactions = async () => {
     if (transactions.length === 0) {
-      alert("ไม่มีรายการที่จะบันทึก");
+      warntoast({ text: "ไม่มีรายการที่จะบันทึก" });
       return;
     }
 
@@ -82,19 +83,17 @@ export default function BankStatement() {
     try {
       const response = await service.saveTransactions(transactions);
       if (response.ok) {
-        alert("บันทึกสำเร็จ!");
+        successtoast({ text: "บันทึกสำเร็จ!" });
         setTransactions([]);
         setFile(null);
         setStep("upload");
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(
-          `บันทึกไม่สำเร็จ: ${errorData.message || response.statusText}`
-        );
+        errortoast({ text: `บันทึกไม่สำเร็จ: ${errorData.message || response.statusText}` });
       }
     } catch (error: any) {
       console.error("Error saving transactions:", error);
-      alert("เกิดข้อผิดพลาดในการบันทึก");
+      errortoast({ text: "เกิดข้อผิดพลาดในการบันทึก" });
     } finally {
       setSaving(false);
     }
