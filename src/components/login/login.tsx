@@ -13,7 +13,10 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+  const [uuid, setUUID] = useState<string | null>();
   const [name, setName] = useState<string>();
+
+  const [attempLogin, setAttempLogin] = useState<boolean>();
 
   const loginService = new LoginService();
   async function signAndVerify(challenge: string, privateKey: CryptoKey) {
@@ -56,6 +59,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
       if (response.status === 200) {
         const result = await response.json();
+        setUUID(result.uuid);
         // if (result?.success === false) {
         // const { signature } = await signAndVerify(
         //   result.challenge,
@@ -70,7 +74,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       if (error instanceof Error) {
         errortoast({ text: "เกิดข้อผิดพลาด: " + error.message });
       } else {
-        errortoast({ text: "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ: " + String(error) });
+        errortoast({
+          text: "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ: " + String(error),
+        });
       }
     }
   }
@@ -81,21 +87,27 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     initialChallenge: string,
     // counter:number
   ) {
+    setAttempLogin(true);
     const interval = setInterval(async () => {
       let challenge = initialChallenge;
       const { signature } = await signAndVerify(challenge, privateKey);
-      console.log("challenge to sined", challenge);
       const res = await loginService.pollToken(
         JSON.stringify({ uuid, signature }),
       );
+
+      if (res.status == 404) {
+        setUUID(null);
+        setAttempLogin(false);
+        errortoast({ text: "Login ไม่สำเร็จ กรุณากดขอ UUID ใหม่อีกครั้ง" });
+        clearInterval(interval);
+      }
+
       if (!res.ok) return;
 
       const data = await res.json();
-      console.log("datadatadata", data);
 
       if (data.status === "approved") {
         clearInterval(interval);
-        console.log("LOGIN SUCCESS", data.token);
         localStorage.setItem("token", data.token);
         onLoginSuccess();
       } else if (data.status === "rejected") {
@@ -103,7 +115,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         errortoast({ text: "Device not approved" });
       } else if (data.challenge) {
         // If not approved yet but a challenge is provided, sign it
-        console.log("receive challenge", data.challenge);
         initialChallenge = data.challenge; // await signAndVerify(data.challenge, privateKey);
       }
     }, 5000);
@@ -158,17 +169,28 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 console.log(event.target.value);
               }}
             ></input> */}
-            <button
-              className="w-full bg-purple-primary hover:bg-purple-hover text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg shadow-purple-200 transition-all active:scale-95 focus:ring-4 focus:ring-purple-200"
-              onClick={requestUuid}
-            >
-              ขอ UUID
-            </button>
-            <p className="text-xs text-center text-gray-400">
-              * ข้อมูลจะถูกเก็บเป็นความลับและใช้เพื่อระบุตัวตนของคุณเท่านั้น
-            </p>
+            {uuid ? (
+              <></>
+            ) : (
+              <button
+                className="w-full bg-purple-primary hover:bg-purple-hover text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg shadow-purple-200 transition-all active:scale-95 focus:ring-4 focus:ring-purple-200"
+                onClick={requestUuid}
+              >
+                ขอ UUID
+              </button>
+            )}
           </div>
+          {attempLogin ? <div>กำลังดำเนินการ...</div> : <></>}
         </Container>
+        {uuid ? (
+          <Container>
+            <div>
+              <p className="text-gray-500">{uuid}</p>
+            </div>
+          </Container>
+        ) : (
+          <></>
+        )}
         <Toaster position="top-center" />
       </div>
     </div>
