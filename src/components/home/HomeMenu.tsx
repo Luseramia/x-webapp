@@ -17,11 +17,11 @@ const HomeMenu: React.FC = () => {
                     <h3>อัปโหลดไฟล์</h3>
                     <p>อัปโหลดวิดีโอ, รูปภาพ, เอกสาร และไฟล์อื่นๆ</p>
                 </Link>
-                <Link to="/income-expense" className="menu-card finance-card">
+                {/* <Link to="/income-expense" className="menu-card finance-card">
                     <div className="card-icon">💰</div>
                     <h3>รายรับ-รายจ่าย</h3>
                     <p>จัดการบัญชีรายรับรายจ่ายได้อย่างง่ายดาย</p>
-                </Link>
+                </Link> */}
                 <Link to="/my-files" className="menu-card finance-card">
                     <div className="card-icon">📂</div>
                     <h3>ไฟล์ของฉัน</h3>

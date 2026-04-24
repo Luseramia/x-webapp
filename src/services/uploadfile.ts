@@ -6,8 +6,6 @@ import type { requestPresignBodyModel } from "../models/file.model";
 export default class UploadFileService {
   globalApi = new GlobalApi();
 
-
-
   async putByPresign(
     url: string,
     file: File,
@@ -16,23 +14,21 @@ export default class UploadFileService {
     return await this.globalApi.uploadFileByPresign(url, file, fn);
   }
 
-
-
   async getUploadPresignUrl(body: string) {
     return await this.globalApi.authPost("file/upload/presign", body);
   }
-
-
 
   async getDowloadPresignUrl(body: string) {
     return await this.globalApi.authPost("file/dowload/presign", body);
   }
 
+  async getVideoPresignUrl(body: string) {
+    return await this.globalApi.authPost("file/vdo/presign", body);
+  }
 
   async getAllThumnail() {
     return await this.globalApi.authGet("file/all/thumnail");
   }
-
 
   async getMyFiles() {
     return await this.globalApi.authGet("file/my-files");

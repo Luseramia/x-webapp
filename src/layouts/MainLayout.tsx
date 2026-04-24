@@ -13,7 +13,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, isLoggedIn, onLogout 
         <div className="app-layout">
             <header className="app-header">
                 <div className="logo-section">
-                    <span className="logo-sparkle">✨</span>
+                    {/* <span className="logo-sparkle">✨</span> */}
+                    <img src='icon.png'></img>
                     <h1>X-WEBAPP</h1>
                 </div>
                 {isLoggedIn && (
@@ -27,7 +28,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, isLoggedIn, onLogout 
                         <NavLink to="/bank-statement" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                             รายการเดินบัญชี
                         </NavLink>
-                        <NavLink to="/file-upload" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                        {/* <NavLink to="/file-upload" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                             อัปโหลดไฟล์
                         </NavLink>
                         <NavLink to="/my-files" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
@@ -35,10 +36,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, isLoggedIn, onLogout 
                         </NavLink>
                         <NavLink to="/public-files" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                             ไฟล์สาธารณะ
-                        </NavLink>
-                        <NavLink to="/dashboard" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-                            แดชบอร์ด
-                        </NavLink>
+                        </NavLink> */}
+                   
                         <button className="logout-button" onClick={onLogout}>
                             ออกจากระบบ
                         </button>

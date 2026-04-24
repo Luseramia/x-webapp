@@ -4,7 +4,7 @@ import Login from '../components/login/login';
 import HomeMenu from '../components/home/HomeMenu';
 import IncomeExpense from '../components/income-expense';
 import BankStatement from '../components/bank-statement';
-import Dashboard from '../components/dashboard';
+import Dashboard from '../components/bank-statement/bank-statement-dashboard';
 import VideoPlayer from '../components/video-player';
 import VideoFeed from '../components/video-feed';
 import FileUpload from '../components/file-upload';
@@ -31,18 +31,18 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ isLoggedIn, onLogin }) => {
                 path="/upload"
                 element={<Navigate to="/file-upload" />}
             />
-            <Route
+            {/* <Route
                 path="/income-expense"
                 element={isLoggedIn ? <IncomeExpense /> : <Navigate to="/login" />}
-            />
+            /> */}
             <Route
                 path="/bank-statement"
                 element={isLoggedIn ? <BankStatement /> : <Navigate to="/login" />}
             />
-            <Route
+            {/* <Route
                 path="/dashboard"
                 element={isLoggedIn ? <Dashboard /> : <Navigate to="/login" />}
-            />
+            /> */}
             <Route
                 path="/watch"
                 element={isLoggedIn ? <VideoPlayer /> : <Navigate to="/login" />}
