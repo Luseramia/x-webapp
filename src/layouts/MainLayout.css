@@ -15,6 +15,12 @@
     gap: 0.5rem;
 }
 
+.logo-section img {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+}
+
 .main-nav {
     display: flex;
     align-items: center;
@@ -22,23 +28,23 @@
 }
 
 
-
+/* 
 .nav-link {
     text-decoration: none;
     color: #555;
     font-weight: 500;
     transition: color 0.2s ease;
-}
+} */
 
-.nav-link:hover {
-    color: #4CAF50; /* Adjust to preferred theme color */
-}
+/* .nav-link:hover {
+    color: #4CAF50;
+} */
 
-.nav-link.active {
+/* .nav-link.active {
     color: #4CAF50;
     border-bottom: 2px solid #4CAF50;
     padding-bottom: 2px;
-}
+} */
 
 .logout-button {
     background: transparent;

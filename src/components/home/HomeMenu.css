@@ -46,6 +46,11 @@
     margin-bottom: 1rem;
 }
 
+.image-icon{
+    height:150px;
+    width:125px;
+}
+
 .menu-card h3 {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;

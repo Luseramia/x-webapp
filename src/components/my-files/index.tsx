@@ -146,7 +146,25 @@ export default function MyFiles() {
       const res = await uploadService.getDowloadPresignUrl(body);
       const data = await res.json();
       if (data.url) {
-        window.open(data.url, "_blank");
+        // โหลดไฟล์มาเป็น Blob ก่อน
+        const fileRes = await fetch(data.url);
+        if (!fileRes.ok) throw new Error("Network response was not ok");
+        const blob = await fileRes.blob();
+        
+        // สร้าง object URL จาก Blob
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        // กำหนดชื่อไฟล์สำหรับการดาวน์โหลด
+        a.download = file.originalName || "download";
+        
+        document.body.appendChild(a);
+        a.click(); // สั่งให้เบราว์เซอร์ดาวน์โหลด
+        
+        // ล้างค่าเมื่อดาวน์โหลดเสร็จ
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
       }
     } catch (error) {
       console.error("Error downloading file:", error);

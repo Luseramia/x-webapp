@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './HomeMenu.css';
-
+import statementIcon from '../../assets/statement.png'
 const HomeMenu: React.FC = () => {
     return (
         <div className="home-menu-container">
@@ -16,6 +16,10 @@ const HomeMenu: React.FC = () => {
                     <div className="card-icon">📤</div>
                     <h3>อัปโหลดไฟล์</h3>
                     <p>อัปโหลดวิดีโอ, รูปภาพ, เอกสาร และไฟล์อื่นๆ</p>
+                </Link>
+                <Link to="/bank-statement" className="menu-card upload-card">
+                    <div className="image-icon"><img src={statementIcon}/></div>
+                    <h3>รายการเดินบัญชี</h3>
                 </Link>
                 {/* <Link to="/income-expense" className="menu-card finance-card">
                     <div className="card-icon">💰</div>
