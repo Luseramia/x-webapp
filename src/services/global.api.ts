@@ -14,7 +14,6 @@ export default class GlobalApi {
       body: body,
     });
   };
-
   public authGet = async (endpoint: string) => {
     const token = localStorage.getItem("token");
     return await fetch(`${baseUrl}/${endpoint}`, {
