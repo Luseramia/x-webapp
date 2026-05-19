@@ -10,6 +10,7 @@ import VideoFeed from '../components/video-feed';
 import FileUpload from '../components/file-upload';
 import MyFiles from '../components/my-files';
 import PublicFiles from '../components/public-files';
+import CryptoAnalysis from '../components/crypto-analysis';
 
 interface AppRoutesProps {
     isLoggedIn: boolean;
@@ -62,6 +63,10 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ isLoggedIn, onLogin }) => {
             <Route
                 path="/public-files"
                 element={isLoggedIn ? <PublicFiles /> : <Navigate to="/login" />}
+            />
+            <Route
+                path="/crypto-analysis"
+                element={isLoggedIn ? <CryptoAnalysis /> : <Navigate to="/login" />}
             />
             <Route
                 path="/"

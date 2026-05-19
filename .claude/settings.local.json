@@ -4,7 +4,10 @@
       "Bash(npm run:*)",
       "Bash(npm install:*)",
       "Bash(bun build *)",
-      "Bash(bun check *)"
+      "Bash(bun check *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(bun tsc *)"
     ]
   }
 }

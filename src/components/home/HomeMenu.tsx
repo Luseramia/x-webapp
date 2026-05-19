@@ -21,6 +21,11 @@ const HomeMenu: React.FC = () => {
                     <div className="image-icon"><img src={statementIcon}/></div>
                     <h3>รายการเดินบัญชี</h3>
                 </Link>
+                <Link to="/crypto-analysis" className="menu-card finance-card">
+                    <div className="card-icon">📈</div>
+                    <h3>วิเคราะห์คริปโต</h3>
+                    <p>บันทึก/ดูผลวิเคราะห์เหรียญตาม timeframe</p>
+                </Link>
                 {/* <Link to="/income-expense" className="menu-card finance-card">
                     <div className="card-icon">💰</div>
                     <h3>รายรับ-รายจ่าย</h3>
