@@ -1,0 +1,290 @@
+{
+  "name": "BNB 4H Analysis with Ollama (Improved)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "id": "9daae77b-6bca-406b-9094-e186b5dd3345",
+      "name": "Cron (ทุก 4 ชั่วโมง)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        1312,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ccxt = require('ccxt');\n\nconst exchange = new ccxt.binance();\n\n// ดึงข้อมูล 4H 200 แท่ง เพื่อให้ Bollinger Bands และ MACD แม่นขึ้น\nconst ohlcv = await exchange.fetchOHLCV('BNB/USDT', '1d', undefined, 200);\n\nreturn ohlcv.map(c => ({\n  time: c[0],\n  open: c[1],\n  high: c[2],\n  low: c[3],\n  close: c[4],\n  volume: c[5]\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        16
+      ],
+      "id": "6cb10512-279c-40fe-8b69-38ab40641101",
+      "name": "ดึงข้อมูล OHLCV (200 แท่ง)"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import pandas as pd\nimport talib\nimport numpy as np\n\n# รับข้อมูลจาก node ก่อนหน้า\ndata = [item['json'] for item in _items]\ndf = pd.DataFrame(data)\n\nclose  = df['close'].astype(float).values\nhigh   = df['high'].astype(float).values\nlow    = df['low'].astype(float).values\nvolume = df['volume'].astype(float).values\n\n# === EMA ===\nema20 = talib.EMA(close, timeperiod=20)\nema50 = talib.EMA(close, timeperiod=50)\n\n# === RSI ===\nrsi = talib.RSI(close, timeperiod=14)\n\n# === MACD ===\nmacd, macd_signal, macd_hist = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)\n\n# === Bollinger Bands ===\nbb_upper, bb_middle, bb_lower = talib.BBANDS(close, timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)\n\n# === Volume SMA (20) ===\nvol_sma20 = talib.SMA(volume, timeperiod=20)\n\n# === ATR ===\natr = talib.ATR(high, low, close, timeperiod=14)\n\nlast = df.iloc[-1]\nprev = df.iloc[-2]\n\nvol_ratio = float(volume[-1]) / float(vol_sma20[-1]) if vol_sma20[-1] > 0 else 1.0\n\nmacd_cross = \"NONE\"\nif macd[-2] < macd_signal[-2] and macd[-1] > macd_signal[-1]:\n    macd_cross = \"GOLDEN_CROSS\"\nelif macd[-2] > macd_signal[-2] and macd[-1] < macd_signal[-1]:\n    macd_cross = \"DEAD_CROSS\"\n\nbb_position = \"MIDDLE\"\nif close[-1] > bb_upper[-1]:\n    bb_position = \"ABOVE_UPPER\"\nelif close[-1] < bb_lower[-1]:\n    bb_position = \"BELOW_LOWER\"\nelif close[-1] > bb_middle[-1]:\n    bb_position = \"UPPER_HALF\"\nelse:\n    bb_position = \"LOWER_HALF\"\n\nreturn [{\n    \"json\": {\n        \"symbol\": \"BNB/USDT\",\n        \"timeframe\": \"1d\",\n        \"price\": round(float(last['close']), 4),\n        \"open\": round(float(last['open']), 4),\n        \"high\": round(float(last['high']), 4),\n        \"low\": round(float(last['low']), 4),\n        \"volume\": round(float(last['volume']), 2),\n        \"ema20\": round(float(ema20[-1]), 4),\n        \"ema50\": round(float(ema50[-1]), 4),\n        \"rsi\": round(float(rsi[-1]), 2),\n        \"macd\": round(float(macd[-1]), 4),\n        \"macd_signal\": round(float(macd_signal[-1]), 4),\n        \"macd_hist\": round(float(macd_hist[-1]), 4),\n        \"macd_cross\": macd_cross,\n        \"bb_upper\": round(float(bb_upper[-1]), 4),\n        \"bb_middle\": round(float(bb_middle[-1]), 4),\n        \"bb_lower\": round(float(bb_lower[-1]), 4),\n        \"bb_position\": bb_position,\n        \"atr\": round(float(atr[-1]), 4),\n        \"volume_ratio\": round(vol_ratio, 2),\n        \"prev_close\": round(float(prev['close']), 4)\n    }\n}]\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        0
+      ],
+      "id": "76fc6018-0f53-4513-b5f0-ebee862eb10c",
+      "name": "คำนวณ Indicators"
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://192.168.1.33:11434/api/chat",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 120000
+        },
+        "bodyParametersJson": "={\n  \"model\": \"qwen2.5:7b\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"คุณคือนักวิเคราะห์เทคนิค Crypto มืออาชีพ ตอบเป็นภาษาไทยเสมอ วิเคราะห์ข้อมูลอย่างละเอียด มีเหตุผล และให้คำแนะนำที่ปฏิบัติได้จริง\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"วิเคราะห์ BNB/USDT กรอบเวลา 1 วัน จากข้อมูลด้านนี้:\\n\\n📊 ราคา:\\n- ราคาปัจจุบัน: {{$json.price}}\\n- Open: {{$json.open}} | High: {{$json.high}} | Low: {{$json.low}}\\n- แท่งเทียนก่อนหน้า: {{$json.prev_close}}\\n\\n📈 Trend Indicators:\\n- EMA20: {{$json.ema20}}\\n- EMA50: {{$json.ema50}}\\n\\n⚡ Momentum:\\n- RSI(14): {{$json.rsi}}\\n- MACD: {{$json.macd}}\\n- MACD Signal: {{$json.macd_signal}}\\n- MACD Histogram: {{$json.macd_hist}}\\n- MACD Cross: {{$json.macd_cross}}\\n\\n📉 Bollinger Bands (20,2):\\n- Upper: {{$json.bb_upper}}\\n- Middle: {{$json.bb_middle}}\\n- Lower: {{$json.bb_lower}}\\n- ตำแหน่งราคา: {{$json.bb_position}}\\n\\n🔹 Volume & Volatility:\\n- Volume ปัจจุบัน: {{$json.volume}}\\n- Volume เทียบค่าเฉลี่ย: {{$json.volume_ratio}}x\\n- ATR(14): {{$json.atr}}\\n\\nกรุณาวิเคราะห์และตอบในรูปแบบนี้:\\n\\n## 📊 สรุปแนวโน้ม\\n[ระบุ BULLISH / BEARISH / NEUTRAL และเหตุผลสั้นๆ 1-2 ประโยค]\\n\\n## 🔍 วิเคราะห์ Indicator\\n**EMA (แนวโน้ม):** [วิเคราะห์ EMA20/EMA50 และ Golden/Dead Cross]\\n**RSI (โมเมนตัม):** [เปรียบ RSI Overbought/Oversold/Normal และแนวโน้ม]\\n**MACD:** [วิเคราะห์ MACD histogram และ cross signal]\\n**Bollinger Bands:** [ราคาอยู่ในตำแหน่งของ BB และสื่อถึงอะไร]\\n**Volume:** [ปริมาณการซื้อขายเทียบค่าเฉลี่ย สนับสนุนทิศทางหรือไม่]\\n\\n## 🎯 แนวรับ / แนวต้าน\\n- แนวต้านที่ 1: [ราคา] (เหตุผล)\\n- แนวต้านที่ 2: [ราคา] (เหตุผล)\\n- แนวรับที่ 1: [ราคา] (เหตุผล)\\n- แนวรับที่ 2: [ราคา] (เหตุผล)\\n\\n## 💡 คำแนะนำ\\n**แนวทาง:** [Long / Short / รอสัญญาณ]\\n- จุด Entry ที่เหมาะสม: [ราคา]\\n- Stop Loss แนะนำ: [ราคา] (อิง ATR {{$json.atr}})\\n- Target ที่ 1: [ราคา]\\n- Target ที่ 2: [ราคา]\\n\\n## ⚠️ ความเสี่ยงและสิ่งที่ต้องระวัง\\n[ตอบ 2-3 ข้อที่ต้องระวัง เช่น สัญญาณที่ขัดแย้ง หรือ ปัจจัยที่ทำให้ทิศทางเปลี่ยน]\"\n    }\n  ],\n  \"stream\": false,\n  \"options\": {\n    \"temperature\": 0.3,\n    \"num_predict\": 1024\n  }\n}"
+      },
+      "id": "cb372d4f-26ee-4fb3-a36c-a48fd7ef3acf",
+      "name": "วิเคราะห์ด้วย Ollama (qwen2.5:7b)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===== Parse Ollama response → structured fields =====\nconst body = $input.item.json;\nconst analysis = body.message?.content || body.choices?.[0]?.message?.content || '';\n\nconst SYMBOL = 'BNB/USDT';\nconst TIMEFRAME = '1D';\n\nconst firstMatch = (re) => {\n  const m = analysis.match(re);\n  return m ? m[1].trim().replace(/\\*+$/g, '').trim() : null;\n};\nconst pickNumber = (s) => {\n  if (!s) return null;\n  const m = s.match(/-?\\d+(?:[.,]\\d+)?/);\n  return m ? parseFloat(m[0].replace(/,/g, '')) : null;\n};\n\n// --- Trend ---\nconst trendBlock = firstMatch(/สรุปแนวโน้ม\\s*\\n+\\s*([^\\n]+)/);\nlet trend = null, trend_reason = null;\nif (trendBlock) {\n  const m = trendBlock.match(/^([A-Z]+)\\s*-\\s*เหตุผล\\s*[:：]\\s*(.+)$/);\n  if (m) { trend = m[1]; trend_reason = m[2].trim(); }\n  else trend = trendBlock.split(/\\s+/)[0];\n}\n\n// --- Indicators ---\nconst stripMd = (s) => s ? s.replace(/^\\*+\\s*/, '').replace(/\\*+$/g, '').trim() : null;\nconst ema_note      = stripMd(firstMatch(/EMA[^\\n:：]*[:：]\\s*\\**\\s*([^\\n]+)/));\nconst macd_note     = stripMd(firstMatch(/\\*\\*MACD[^\\n:：]*[:：]\\*\\*\\s*([^\\n]+)/) || firstMatch(/MACD[^\\n:：]*[:：]\\s*\\**\\s*([^\\n]+)/));\nconst bollinger_note= stripMd(firstMatch(/Bollinger\\s*Bands[^\\n:：]*[:：]\\s*\\**\\s*([^\\n]+)/i));\nconst volume_note   = stripMd(firstMatch(/Volume[^\\n:：]*[:：]\\s*\\**\\s*([^\\n]+)/i));\nconst rsiLine       = firstMatch(/RSI[^\\n:：]*[:：]\\s*\\**\\s*([^\\n]+)/);\nconst rsi           = pickNumber(rsiLine);\n\n// --- Support / Resistance ---\nconst r1Line = firstMatch(/แนวต้านที่\\s*1\\s*[:：]\\s*([^\\n]+)/);\nconst r2Line = firstMatch(/แนวต้านที่\\s*2\\s*[:：]\\s*([^\\n]+)/);\nconst s1Line = firstMatch(/แนวรับที่\\s*1\\s*[:：]\\s*([^\\n]+)/);\nconst s2Line = firstMatch(/แนวรับที่\\s*2\\s*[:：]\\s*([^\\n]+)/);\n\n// --- Recommendation ---\nconst recLine = firstMatch(/แนวทาง[^\\n:：]*[:：]\\s*\\**\\s*([^\\n]+)/);\nlet recommendation = null, recommendation_reason = null;\nif (recLine) {\n  const m = recLine.match(/^([A-Za-zก-๙]+)\\s*-\\s*เหตุผล\\s*[:：]\\s*(.+)$/);\n  if (m) { recommendation = m[1]; recommendation_reason = m[2].trim(); }\n  else recommendation = recLine.split(/\\s+/)[0];\n}\n\nconst entryLine = firstMatch(/จุด\\s*Entry[^\\n:：]*[:：]\\s*([^\\n]+)/i);\nconst slLine    = firstMatch(/Stop\\s*Loss[^\\n:：]*[:：]\\s*([^\\n]+)/i);\nconst t1Line    = firstMatch(/Target\\s*ที่\\s*1\\s*[:：]\\s*([^\\n]+)/i);\nconst t2Line    = firstMatch(/Target\\s*ที่\\s*2\\s*[:：]\\s*([^\\n]+)/i);\n\n// --- ATR ---\nconst atrMatch = analysis.match(/ATR\\s*([0-9.,]+)/i);\nconst atr = atrMatch ? parseFloat(atrMatch[1].replace(/,/g, '')) : null;\n\n// --- Risk ---\nconst riskSection = analysis.match(/⚠️[^\\n]*\\n([\\s\\S]+)$/);\nconst risk_note = riskSection ? riskSection[1].trim() : null;\n\n// --- Timestamps ---\nconst now = new Date();\nconst tsThai = now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });\n\nreturn [\n  {\n    json: {\n      // For Discord (keep backward-compat fields)\n      timestamp: tsThai,\n      symbol: SYMBOL,\n      analysis: analysis,\n\n      // For Postgres insert\n      analyzed_at: now.toISOString(),\n      coin: SYMBOL,\n      timeframe: TIMEFRAME,\n\n      trend,\n      trend_reason,\n\n      recommendation,\n      recommendation_reason,\n\n      entry_price: pickNumber(entryLine),\n      stop_loss: pickNumber(slLine),\n      stop_loss_note: slLine,\n      target_1: pickNumber(t1Line),\n      target_2: pickNumber(t2Line),\n\n      resistance_1: pickNumber(r1Line),\n      resistance_1_note: r1Line,\n      resistance_2: pickNumber(r2Line),\n      resistance_2_note: r2Line,\n      support_1: pickNumber(s1Line),\n      support_1_note: s1Line,\n      support_2: pickNumber(s2Line),\n      support_2_note: s2Line,\n\n      rsi,\n      atr,\n\n      ema_note,\n      macd_note,\n      bollinger_note,\n      volume_note,\n      risk_note,\n\n      raw_text: analysis,\n      raw: body\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2384,
+        16
+      ],
+      "id": "ecbe73a5-e894-4da9-8f88-c1c74f131009",
+      "name": "เกะบล + Format Output"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1285649599691755673",
+          "mode": "list",
+          "cachedResultName": "delsgade",
+          "cachedResultUrl": "https://discord.com/channels/1285649599691755673"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1501457736817311796",
+          "mode": "list",
+          "cachedResultName": "analysis",
+          "cachedResultUrl": "https://discord.com/channels/1285649599691755673/1501457736817311796"
+        },
+        "content": "=วิเคราะห์ที่เวลา : {{ $json.timestamp }}\nเหรียญ : {{ $json.symbol }}\ntimeframe : {{ $json.timeframe }}\nผลการวิเคราะห์ : {{ $json.analysis }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        2688,
+        16
+      ],
+      "id": "82f1f552-92b3-44ac-86cf-4481491d7487",
+      "name": "Send a message",
+      "webhookId": "c79ee4bc-9fb5-45fe-91dd-3af50a96d3dc",
+      "credentials": {
+        "discordBotApi": {
+          "id": "HmMkg4nEY7ZcpYTe",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "crypto_analysis",
+          "mode": "list",
+          "cachedResultName": "crypto_analysis"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "analyzed_at": "={{ $json.analyzed_at }}",
+            "coin": "={{ $json.coin }}",
+            "timeframe": "={{ $json.timeframe }}",
+            "trend": "={{ $json.trend }}",
+            "trend_reason": "={{ $json.trend_reason }}",
+            "recommendation": "={{ $json.recommendation }}",
+            "recommendation_reason": "={{ $json.recommendation_reason }}",
+            "entry_price": "={{ $json.entry_price }}",
+            "stop_loss": "={{ $json.stop_loss }}",
+            "stop_loss_note": "={{ $json.stop_loss_note }}",
+            "target_1": "={{ $json.target_1 }}",
+            "target_2": "={{ $json.target_2 }}",
+            "resistance_1": "={{ $json.resistance_1 }}",
+            "resistance_1_note": "={{ $json.resistance_1_note }}",
+            "resistance_2": "={{ $json.resistance_2 }}",
+            "resistance_2_note": "={{ $json.resistance_2_note }}",
+            "support_1": "={{ $json.support_1 }}",
+            "support_1_note": "={{ $json.support_1_note }}",
+            "support_2": "={{ $json.support_2 }}",
+            "support_2_note": "={{ $json.support_2_note }}",
+            "rsi": "={{ $json.rsi }}",
+            "atr": "={{ $json.atr }}",
+            "ema_note": "={{ $json.ema_note }}",
+            "macd_note": "={{ $json.macd_note }}",
+            "bollinger_note": "={{ $json.bollinger_note }}",
+            "volume_note": "={{ $json.volume_note }}",
+            "risk_note": "={{ $json.risk_note }}",
+            "raw_text": "={{ $json.raw_text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "id", "displayName": "id", "required": false, "defaultMatch": true, "display": true, "type": "number", "canBeUsedToMatch": true, "removed": true },
+            { "id": "analyzed_at", "displayName": "analyzed_at", "required": true, "defaultMatch": false, "display": true, "type": "dateTime", "canBeUsedToMatch": true },
+            { "id": "coin", "displayName": "coin", "required": true, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "timeframe", "displayName": "timeframe", "required": true, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "trend", "displayName": "trend", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "trend_reason", "displayName": "trend_reason", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "recommendation", "displayName": "recommendation", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "recommendation_reason", "displayName": "recommendation_reason", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "entry_price", "displayName": "entry_price", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true },
+            { "id": "stop_loss", "displayName": "stop_loss", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true },
+            { "id": "stop_loss_note", "displayName": "stop_loss_note", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "target_1", "displayName": "target_1", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true },
+            { "id": "target_2", "displayName": "target_2", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true },
+            { "id": "resistance_1", "displayName": "resistance_1", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true },
+            { "id": "resistance_1_note", "displayName": "resistance_1_note", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "resistance_2", "displayName": "resistance_2", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true },
+            { "id": "resistance_2_note", "displayName": "resistance_2_note", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "support_1", "displayName": "support_1", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true },
+            { "id": "support_1_note", "displayName": "support_1_note", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "support_2", "displayName": "support_2", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true },
+            { "id": "support_2_note", "displayName": "support_2_note", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "rsi", "displayName": "rsi", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true },
+            { "id": "atr", "displayName": "atr", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true },
+            { "id": "ema_note", "displayName": "ema_note", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "macd_note", "displayName": "macd_note", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "bollinger_note", "displayName": "bollinger_note", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "volume_note", "displayName": "volume_note", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "risk_note", "displayName": "risk_note", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "raw_text", "displayName": "raw_text", "required": true, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "create_by_user_id", "displayName": "create_by_user_id", "required": false, "defaultMatch": false, "display": true, "type": "number", "canBeUsedToMatch": true }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2672,
+        240
+      ],
+      "id": "6fc354d7-7687-4d63-a954-b9e82084b529",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "YbjztJAVKFd5AfKW",
+          "name": "project_X"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Cron (ทุก 4 ชั่วโมง)": {
+      "main": [
+        [
+          {
+            "node": "ดึงข้อมูล OHLCV (200 แท่ง)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ดึงข้อมูล OHLCV (200 แท่ง)": {
+      "main": [
+        [
+          {
+            "node": "คำนวณ Indicators",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "คำนวณ Indicators": {
+      "main": [
+        [
+          {
+            "node": "วิเคราะห์ด้วย Ollama (qwen2.5:7b)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "วิเคราะห์ด้วย Ollama (qwen2.5:7b)": {
+      "main": [
+        [
+          {
+            "node": "เกะบล + Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "เกะบล + Format Output": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9811f27e-a70c-4528-a56c-9bc0dd3acdd6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ed16affd7947224748b3ca6c4f6ba99d1cfded927304821a5b90b300054e3c89"
+  },
+  "id": "STCRM0Xzyt08hoJb",
+  "tags": []
+}
