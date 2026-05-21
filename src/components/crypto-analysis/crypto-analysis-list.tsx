@@ -20,6 +20,8 @@ function recommendationColor(rec?: string | null) {
   return "text-gray-600 bg-gray-50 border-gray-200";
 }
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
+
 export default function CryptoAnalysisList() {
   const service = useMemo(() => new CryptoAnalysisService(), []);
   const [items, setItems] = useState<CryptoAnalysis[]>([]);
@@ -32,17 +34,28 @@ export default function CryptoAnalysisList() {
   }>({ timeframes: [], coins: [] });
   const [expanded, setExpanded] = useState<number | null>(null);
 
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [total, setTotal] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
+
   const refresh = async () => {
     setLoading(true);
     try {
       const data = await service.list({
         timeframe: timeframe || undefined,
         coin: coin || undefined,
+        page,
+        pageSize,
       });
-      setItems(data);
+      setItems(data.items);
+      setTotal(data.total);
+      setTotalPages(data.totalPages);
     } catch (e: any) {
       errortoast({ text: e.message || "โหลดข้อมูลไม่สำเร็จ" });
       setItems([]);
+      setTotal(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -52,10 +65,15 @@ export default function CryptoAnalysisList() {
     service.getFilters().then(setFilters).catch(() => {});
   }, [service]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [timeframe, coin, pageSize]);
+
   useEffect(() => {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeframe, coin]);
+  }, [timeframe, coin, page, pageSize]);
 
   const tfOptions = useMemo(() => {
     const set = new Set<string>([...COMMON_TIMEFRAMES, ...filters.timeframes]);
@@ -235,9 +253,127 @@ export default function CryptoAnalysisList() {
             })}
           </div>
         )}
+
+        {/* Pagination */}
+        {!loading && total > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-3 flex flex-wrap items-center gap-3">
+            <div className="text-sm text-gray-500">
+              ทั้งหมด <span className="font-semibold text-gray-700">{total}</span>{" "}
+              รายการ • หน้า{" "}
+              <span className="font-semibold text-gray-700">{page}</span>/
+              {totalPages}
+            </div>
+
+            <div className="flex items-center gap-2 ml-auto">
+              <label className="text-xs text-gray-500">ต่อหน้า</label>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="border border-gray-200 rounded-lg px-2 py-1 text-sm"
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <PageBtn
+                disabled={page <= 1}
+                onClick={() => setPage(1)}
+                aria-label="หน้าแรก"
+              >
+                «
+              </PageBtn>
+              <PageBtn
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                ก่อนหน้า
+              </PageBtn>
+
+              {getPageNumbers(page, totalPages).map((p, i) =>
+                p === "..." ? (
+                  <span
+                    key={`dot-${i}`}
+                    className="px-2 text-gray-400 select-none"
+                  >
+                    …
+                  </span>
+                ) : (
+                  <PageBtn
+                    key={p}
+                    active={p === page}
+                    onClick={() => setPage(p as number)}
+                  >
+                    {p}
+                  </PageBtn>
+                ),
+              )}
+
+              <PageBtn
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                ถัดไป
+              </PageBtn>
+              <PageBtn
+                disabled={page >= totalPages}
+                onClick={() => setPage(totalPages)}
+                aria-label="หน้าสุดท้าย"
+              >
+                »
+              </PageBtn>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
+}
+
+function PageBtn({
+  active,
+  disabled,
+  onClick,
+  children,
+  ...rest
+}: {
+  active?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  children: React.ReactNode;
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`min-w-9 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+        active
+          ? "bg-purple-primary text-white border-purple-primary"
+          : disabled
+            ? "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed"
+            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+      }`}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+}
+
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) pages.push("...");
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < total - 1) pages.push("...");
+  pages.push(total);
+  return pages;
 }
 
 function Mini({ label, value }: { label: string; value?: string | null }) {

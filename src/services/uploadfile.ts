@@ -26,12 +26,29 @@ export default class UploadFileService {
     return await this.globalApi.authPost("file/vdo/presign", body);
   }
 
-  async getAllThumnail() {
-    return await this.globalApi.authGet("file/all/thumnail");
+  async getAllThumnail(params?: { page?: number; pageSize?: number }) {
+    const qs = new URLSearchParams();
+    if (params?.page != null) qs.set("page", String(params.page));
+    if (params?.pageSize != null) qs.set("pageSize", String(params.pageSize));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return await this.globalApi.authGet(`file/all/thumnail${suffix}`);
   }
 
-  async getMyFiles() {
-    return await this.globalApi.authGet("file/my-files");
+  async getMyFiles(params?: {
+    category?: string;
+    page?: number;
+    pageSize?: number;
+  }) {
+    const qs = new URLSearchParams();
+    if (params?.category) qs.set("category", params.category);
+    if (params?.page != null) qs.set("page", String(params.page));
+    if (params?.pageSize != null) qs.set("pageSize", String(params.pageSize));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return await this.globalApi.authGet(`file/my-files${suffix}`);
+  }
+
+  async getMyFilesCounts() {
+    return await this.globalApi.authGet("file/my-files/counts");
   }
 
   async getPublicFiles() {

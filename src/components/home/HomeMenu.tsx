@@ -26,6 +26,11 @@ const HomeMenu: React.FC = () => {
                     <h3>วิเคราะห์คริปโต</h3>
                     <p>บันทึก/ดูผลวิเคราะห์เหรียญตาม timeframe</p>
                 </Link>
+                <Link to="/crypto-news" className="menu-card watch-card">
+                    <div className="card-icon">📰</div>
+                    <h3>ข่าวคริปโต</h3>
+                    <p>ข่าวที่ระบบดึง+วิเคราะห์ทุกชั่วโมง พร้อม sentiment</p>
+                </Link>
                 {/* <Link to="/income-expense" className="menu-card finance-card">
                     <div className="card-icon">💰</div>
                     <h3>รายรับ-รายจ่าย</h3>

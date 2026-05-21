@@ -2,8 +2,8 @@ import axios from "axios";
 import { errortoast } from "../utilities/toast";
 
 // const baseUrl = "https://sso-backend.tarchunk.win";
-// const baseUrl = "http://localhost:3000";
-const baseUrl = '/api'
+const baseUrl = "http://localhost:3000";
+// const baseUrl = '/api'
 export default class GlobalApi {
   public post = async (endpoint: string, body: any) => {
     return await fetch(`${baseUrl}/${endpoint}`, {

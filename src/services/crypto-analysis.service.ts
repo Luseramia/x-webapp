@@ -94,10 +94,20 @@ export default class CryptoAnalysisService {
   async list(params?: {
     timeframe?: string;
     coin?: string;
-  }): Promise<CryptoAnalysis[]> {
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    items: CryptoAnalysis[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }> {
     const qs = new URLSearchParams();
     if (params?.timeframe) qs.set("timeframe", params.timeframe);
     if (params?.coin) qs.set("coin", params.coin);
+    if (params?.page != null) qs.set("page", String(params.page));
+    if (params?.pageSize != null) qs.set("pageSize", String(params.pageSize));
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
     const res = await this.globalApi.authGet(`crypto-analysis/list${suffix}`);
     if (!res.ok) throw new Error("ดึงข้อมูลไม่สำเร็จ");
