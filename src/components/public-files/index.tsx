@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import UploadFileService from "../../services/uploadfile";
 import { errortoast } from "../../utilities/toast";
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
+const DOCUMENT_CATEGORIES = ["pdf", "document", "presentation", "text"];
+const MEDIA_CATEGORIES = ["image", "video"];
 
 interface FileItem {
   id: number;
@@ -72,26 +76,68 @@ export default function PublicFiles() {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState<number | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [total, setTotal] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [counts, setCounts] = useState<{
+    total: number;
+    byCategory: Record<string, number>;
+  }>({ total: 0, byCategory: {} });
 
   const navigate = useNavigate();
-  const uploadService = new UploadFileService();
+  const uploadService = useMemo(() => new UploadFileService(), []);
 
+  // Reset to page 1 when filter or pageSize changes
+  useEffect(() => {
+    setPage(1);
+  }, [filterCategory, pageSize]);
+
+  // Fetch paginated files
   useEffect(() => {
     fetchFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterCategory, page, pageSize]);
+
+  // Fetch category counts once on mount
+  useEffect(() => {
+    fetchCounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function fetchFiles() {
     setLoading(true);
     try {
-      const res = await uploadService.getPublicFiles();
+      const res = await uploadService.getPublicFiles({
+        category: filterCategory === "all" ? undefined : filterCategory,
+        page,
+        pageSize,
+      });
       if (res.ok) {
-        const data: FileItem[] = await res.json();
-        setFiles(data);
+        const data = await res.json();
+        setFiles(data.items ?? []);
+        setTotal(data.total ?? 0);
+        setTotalPages(data.totalPages ?? 1);
       }
     } catch (error) {
       console.error("Error fetching public files:", error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchCounts() {
+    try {
+      const res = await uploadService.getPublicFilesCounts();
+      if (res.ok) {
+        const data = await res.json();
+        setCounts({
+          total: data.total ?? 0,
+          byCategory: data.byCategory ?? {},
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching counts:", error);
     }
   }
 
@@ -129,11 +175,14 @@ export default function PublicFiles() {
     }
   }
 
-  const categories = ["all", ...new Set(files.map((f) => f.category))];
-  const filtered =
-    filterCategory === "all"
-      ? files
-      : files.filter((f) => f.category === filterCategory);
+  const categories = useMemo(
+    () => ["all", ...Object.keys(counts.byCategory)],
+    [counts.byCategory],
+  );
+  const currentPage = Math.min(page, totalPages);
+
+  const sumByCategories = (cats: string[]) =>
+    cats.reduce((sum, c) => sum + (counts.byCategory[c] ?? 0), 0);
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary p-4 md:p-8 flex flex-col items-center">
@@ -150,35 +199,25 @@ export default function PublicFiles() {
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p className="text-sm text-gray-500">ไฟล์ทั้งหมด</p>
             <p className="text-2xl font-bold text-purple-primary">
-              {files.length}
+              {counts.total}
             </p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p className="text-sm text-gray-500">เอกสาร</p>
             <p className="text-2xl font-bold text-blue-600">
-              {
-                files.filter((f) =>
-                  ["pdf", "document", "presentation", "text"].includes(
-                    f.category,
-                  ),
-                ).length
-              }
+              {sumByCategories(DOCUMENT_CATEGORIES)}
             </p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p className="text-sm text-gray-500">Excel / CSV</p>
             <p className="text-2xl font-bold text-green-600">
-              {files.filter((f) => f.category === "excel").length}
+              {counts.byCategory.excel ?? 0}
             </p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p className="text-sm text-gray-500">รูปภาพ / วิดีโอ</p>
             <p className="text-2xl font-bold text-purple-600">
-              {
-                files.filter((f) =>
-                  ["image", "video"].includes(f.category),
-                ).length
-              }
+              {sumByCategories(MEDIA_CATEGORIES)}
             </p>
           </div>
         </div>
@@ -197,8 +236,8 @@ export default function PublicFiles() {
             >
               {cat === "all" ? "ทั้งหมด" : getCategoryLabel(cat)}
               {cat === "all"
-                ? ` (${files.length})`
-                : ` (${files.filter((f) => f.category === cat).length})`}
+                ? ` (${counts.total})`
+                : ` (${counts.byCategory[cat] ?? 0})`}
             </button>
           ))}
         </div>
@@ -209,7 +248,7 @@ export default function PublicFiles() {
             <div className="inline-block w-8 h-8 border-4 border-purple-primary border-t-transparent rounded-full animate-spin" />
             <p className="text-gray-500 mt-4">กำลังโหลด...</p>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : files.length === 0 ? (
           <div className="text-center py-12">
             <svg
               className="w-16 h-16 mx-auto text-gray-300"
@@ -228,7 +267,7 @@ export default function PublicFiles() {
           </div>
         ) : (
           <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-            {filtered.map((file) => (
+            {files.map((file) => (
               <div
                 key={file.id}
                 className="group bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4 hover:shadow-md transition-shadow"
@@ -357,6 +396,82 @@ export default function PublicFiles() {
             ))}
           </div>
         )}
+
+        {/* Pagination */}
+        {!loading && total > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-3 flex flex-wrap items-center gap-3">
+            <div className="text-sm text-gray-500">
+              ทั้งหมด <span className="font-semibold text-gray-700">{total}</span>{" "}
+              ไฟล์ • หน้า{" "}
+              <span className="font-semibold text-gray-700">{currentPage}</span>/
+              {totalPages}
+            </div>
+
+            <div className="flex items-center gap-2 ml-auto">
+              <label className="text-xs text-gray-500">ต่อหน้า</label>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="border border-gray-200 rounded-lg px-2 py-1 text-sm"
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <PageBtn
+                disabled={currentPage <= 1}
+                onClick={() => setPage(1)}
+                aria-label="หน้าแรก"
+              >
+                «
+              </PageBtn>
+              <PageBtn
+                disabled={currentPage <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                ก่อนหน้า
+              </PageBtn>
+
+              {getPageNumbers(currentPage, totalPages).map((p, i) =>
+                p === "..." ? (
+                  <span
+                    key={`dot-${i}`}
+                    className="px-2 text-gray-400 select-none"
+                  >
+                    …
+                  </span>
+                ) : (
+                  <PageBtn
+                    key={p}
+                    active={p === currentPage}
+                    onClick={() => setPage(p as number)}
+                  >
+                    {p}
+                  </PageBtn>
+                ),
+              )}
+
+              <PageBtn
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                ถัดไป
+              </PageBtn>
+              <PageBtn
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage(totalPages)}
+                aria-label="หน้าสุดท้าย"
+              >
+                »
+              </PageBtn>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Image preview modal */}
@@ -397,4 +512,46 @@ export default function PublicFiles() {
       )}
     </div>
   );
+}
+
+function PageBtn({
+  active,
+  disabled,
+  onClick,
+  children,
+  ...rest
+}: {
+  active?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  children: React.ReactNode;
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`min-w-9 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+        active
+          ? "bg-purple-primary text-white border-purple-primary"
+          : disabled
+            ? "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed"
+            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+      }`}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+}
+
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) pages.push("...");
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < total - 1) pages.push("...");
+  pages.push(total);
+  return pages;
 }

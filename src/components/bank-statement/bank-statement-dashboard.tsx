@@ -41,6 +41,7 @@ export default function BankStatementDashboard() {
   const [groupBy, setGroupBy] = useState<GroupBy>("type");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
   const service = useMemo(() => new BankStatementService(), []);
 
@@ -113,6 +114,34 @@ export default function BankStatementDashboard() {
     });
     return map;
   }, [transactions, filterMode]);
+
+  // Reset selection when the grouping or time range changes (keys no longer valid)
+  useEffect(() => {
+    setSelectedKeys(new Set());
+  }, [groupBy, selectedYear, selectedMonth, selectedDay, filterMode]);
+
+  const toggleKey = (key: string) => {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  // Totals for the currently selected groups
+  const selectedTotals = useMemo(() => {
+    let withdrawal = 0;
+    let deposit = 0;
+    selectedKeys.forEach((k) => {
+      const v = byGroup[k];
+      if (v) {
+        withdrawal += v.withdrawal;
+        deposit += v.deposit;
+      }
+    });
+    return { withdrawal, deposit };
+  }, [selectedKeys, byGroup]);
 
   // Summary totals
   const totalWithdrawal = transactions.reduce(
@@ -423,6 +452,72 @@ export default function BankStatementDashboard() {
           </div>
         )}
 
+        {/* Selected total summary */}
+        {!loading && selectedKeys.size > 0 && (
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-purple-primary">
+                ผลรวมที่เลือก ({selectedKeys.size} รายการ)
+              </h2>
+              <button
+                onClick={() => setSelectedKeys(new Set())}
+                className="text-sm text-gray-500 hover:text-gray-700 underline"
+              >
+                ล้างการเลือก
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div className="bg-white rounded-lg p-4 text-center">
+                <p className="text-sm text-gray-500">รวมรายจ่าย</p>
+                <p className="text-2xl font-bold text-red-500 mt-1">
+                  {selectedTotals.withdrawal.toLocaleString("th-TH", {
+                    minimumFractionDigits: 2,
+                  })}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg p-4 text-center">
+                <p className="text-sm text-gray-500">รวมรายรับ</p>
+                <p className="text-2xl font-bold text-green-500 mt-1">
+                  {selectedTotals.deposit.toLocaleString("th-TH", {
+                    minimumFractionDigits: 2,
+                  })}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg p-4 text-center">
+                <p className="text-sm text-gray-500">สุทธิ (รับ - จ่าย)</p>
+                <p
+                  className={`text-2xl font-bold mt-1 ${
+                    selectedTotals.deposit - selectedTotals.withdrawal >= 0
+                      ? "text-green-500"
+                      : "text-red-500"
+                  }`}
+                >
+                  {(
+                    selectedTotals.deposit - selectedTotals.withdrawal
+                  ).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {Array.from(selectedKeys).map((k) => (
+                <span
+                  key={k}
+                  className="inline-flex items-center gap-1 bg-white border border-purple-200 text-purple-primary text-xs rounded-full px-3 py-1"
+                >
+                  {k}
+                  <button
+                    onClick={() => toggleKey(k)}
+                    className="text-purple-300 hover:text-purple-primary"
+                    aria-label="เอาออก"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Top lists — withdrawal & deposit side by side */}
         {!loading && transactions.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -441,9 +536,25 @@ export default function BankStatementDashboard() {
                         ? (val.withdrawal / totalWithdrawal) * 100
                         : 0;
                     return (
-                      <div key={name}>
+                      <div
+                        key={name}
+                        onClick={() => toggleKey(name)}
+                        className={`cursor-pointer rounded-lg p-2 -mx-2 transition-colors ${
+                          selectedKeys.has(name)
+                            ? "bg-purple-50 ring-1 ring-purple-200"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="font-medium truncate mr-2">{name}</span>
+                          <span className="flex items-center gap-2 font-medium truncate mr-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedKeys.has(name)}
+                              readOnly
+                              className="accent-purple-primary shrink-0"
+                            />
+                            <span className="truncate">{name}</span>
+                          </span>
                           <span className="text-gray-500 shrink-0">
                             {val.withdrawal.toLocaleString("th-TH", {
                               minimumFractionDigits: 2,
@@ -481,9 +592,25 @@ export default function BankStatementDashboard() {
                         ? (val.deposit / totalDeposit) * 100
                         : 0;
                     return (
-                      <div key={name}>
+                      <div
+                        key={name}
+                        onClick={() => toggleKey(name)}
+                        className={`cursor-pointer rounded-lg p-2 -mx-2 transition-colors ${
+                          selectedKeys.has(name)
+                            ? "bg-purple-50 ring-1 ring-purple-200"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="font-medium truncate mr-2">{name}</span>
+                          <span className="flex items-center gap-2 font-medium truncate mr-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedKeys.has(name)}
+                              readOnly
+                              className="accent-purple-primary shrink-0"
+                            />
+                            <span className="truncate">{name}</span>
+                          </span>
                           <span className="text-gray-500 shrink-0">
                             {val.deposit.toLocaleString("th-TH", {
                               minimumFractionDigits: 2,

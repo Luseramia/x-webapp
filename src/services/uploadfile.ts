@@ -51,8 +51,21 @@ export default class UploadFileService {
     return await this.globalApi.authGet("file/my-files/counts");
   }
 
-  async getPublicFiles() {
-    return await this.globalApi.authGet("file/public-files");
+  async getPublicFiles(params?: {
+    category?: string;
+    page?: number;
+    pageSize?: number;
+  }) {
+    const qs = new URLSearchParams();
+    if (params?.category) qs.set("category", params.category);
+    if (params?.page != null) qs.set("page", String(params.page));
+    if (params?.pageSize != null) qs.set("pageSize", String(params.pageSize));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return await this.globalApi.authGet(`file/public-files${suffix}`);
+  }
+
+  async getPublicFilesCounts() {
+    return await this.globalApi.authGet("file/public-files/counts");
   }
 
   async updateFileVisibility(id: number, isPublic: boolean) {
