@@ -70,6 +70,14 @@ export interface AiPreviewResult extends PreviewResult {
   requiresHumanReview: true;
 }
 
+export interface FinancialAiSummary {
+  status: "COMPLETED" | "FAILED";
+  summaryMarkdown: string;
+  evidenceKeys: string[];
+  warnings: string[];
+  requiresHumanReview: true;
+}
+
 export interface FinancialMetrics {
   currentAssets: number;
   nonCurrentAssets: number;
@@ -173,11 +181,17 @@ export default class FinancialAnalysisService {
     });
   }
 
-  importStatement(input: { companyId: number; fileName: string; fileType: string; currency: string; unit: FinancialUnit; rows: FinancialImportRow[] }) {
+  importStatement(input: { companyId: number; fileName: string; fileType: string; currency: string; unit: FinancialUnit; rows: FinancialImportRow[]; rawSource?: { scope: FinancialScope; sheets: WorkbookSheet[] } }) {
     return request<{ documentIds: number[]; validation: ValidationResult[] }>("/import", { method: "POST", body: JSON.stringify(input) });
   }
 
   dashboard(companyId: number) {
     return request<FinancialDashboard>(`/companies/${companyId}/dashboard`);
+  }
+
+  aiSummary(companyId: number) {
+    return request<FinancialAiSummary>(`/companies/${companyId}/financial-summary`, {
+      method: "POST",
+    });
   }
 }

@@ -119,6 +119,7 @@
 .fa-composition > div > div i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2b8a80, #67b1a4); }
 .fa-composition strong { text-align: right; }
 .fa-summary { color: #425b57; line-height: 1.75; margin: 0; }
+.fa-ai-evidence { display: block; margin: 0.65rem 0; color: var(--fa-muted); overflow-wrap: anywhere; }
 .fa-disclaimer { display: flex; gap: 0.45rem; margin-top: 1rem; color: var(--fa-muted); line-height: 1.5; }
 
 .fa-signals { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 0.75rem; }
@@ -160,6 +161,7 @@
 .fa-confidence.high { color: #147066; background: #e3f3ee; }
 .fa-confidence.medium { color: #8a671e; background: #fff3d8; }
 .fa-confidence.low { color: #a5473e; background: #fee9e6; }
+.fa-inline-approve { display: block; margin-top: 0.35rem; border: 0; padding: 0; color: var(--fa-green-dark); background: transparent; font-size: 0.7rem; font-weight: 800; cursor: pointer; }
 .fa-count { padding: 0.35rem 0.55rem; border-radius: 999px; font-weight: 800; }
 .fa-count.warning { color: #8b5c17; background: #fff0ce; }
 .fa-count.success { color: #126d63; background: #e1f2ed; }

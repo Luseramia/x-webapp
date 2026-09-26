@@ -3,6 +3,7 @@ import readXlsxFile from "read-excel-file/browser";
 import FinancialAnalysisService, {
   type CanonicalAccount,
   type FinancialCompany,
+  type FinancialAiSummary,
   type FinancialDashboard,
   type FinancialImportRow,
   type FinancialPeriod,
@@ -11,6 +12,7 @@ import FinancialAnalysisService, {
   type FinancialUnit,
   type PreviewResult,
   type WorkbookCell,
+  type WorkbookSheet,
 } from "../../services/financial-analysis.service";
 import "./FinancialAnalysis.css";
 
@@ -205,10 +207,13 @@ export default function FinancialAnalysis() {
   const [showCompanyForm, setShowCompanyForm] = useState(false);
   const [companyDraft, setCompanyDraft] = useState({ name: "", ticker: "", market: "SET", industry: "", defaultCurrency: "THB" });
   const [file, setFile] = useState<File | null>(null);
+  const [rawSheets, setRawSheets] = useState<WorkbookSheet[]>([]);
   const [unit, setUnit] = useState<FinancialUnit>("MILLION");
   const [currency, setCurrency] = useState("THB");
   const [preferredScope, setPreferredScope] = useState<FinancialScope>("CONSOLIDATED");
   const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [aiSummary, setAiSummary] = useState<FinancialAiSummary | null>(null);
+  const [aiSummaryBusy, setAiSummaryBusy] = useState(false);
   const [selectedSource, setSelectedSource] = useState<{ label: string; period: string; source: FinancialSource } | null>(null);
 
   useEffect(() => {
@@ -223,6 +228,7 @@ export default function FinancialAnalysis() {
   }, []);
 
   useEffect(() => {
+    setAiSummary(null);
     if (!selectedCompanyId) { setDashboard(null); return; }
     setLoading(true);
     void service.dashboard(selectedCompanyId)
@@ -249,9 +255,17 @@ export default function FinancialAnalysis() {
     finally { setBusy(false); }
   };
 
+  const generateAiSummary = async () => {
+    if (!selectedCompanyId) return;
+    setAiSummaryBusy(true); setError("");
+    try { setAiSummary(await service.aiSummary(selectedCompanyId)); }
+    catch (reason) { setError(getErrorMessage(reason)); }
+    finally { setAiSummaryBusy(false); }
+  };
+
   const processFile = async (selectedFile: File, scope = preferredScope) => {
     if (!selectedCompanyId) { setError("กรุณาสร้างหรือเลือกบริษัทก่อนนำเข้าไฟล์"); return; }
-    setBusy(true); setError(""); setNotice(""); setPreview(null);
+    setBusy(true); setError(""); setNotice(""); setPreview(null); setRawSheets([]);
     try {
       const extension = selectedFile.name.split(".").pop()?.toLowerCase();
       let matrix: unknown[][];
@@ -284,6 +298,7 @@ export default function FinancialAnalysis() {
         setUnit(result.unit);
         setCurrency(result.currency);
         setFile(selectedFile);
+        setRawSheets(workbookSheets);
         setPreview(result);
         setNotice(`AI จัดรูปแบบกลางจาก ${sheets.length} sheet แล้ว (${result.scope === "CONSOLIDATED" ? "งบรวม" : "งบเฉพาะกิจการ"})${result.normalizationWarnings.length ? ` · มีคำเตือน ${result.normalizationWarnings.length} รายการ` : ""}`);
         return;
@@ -292,20 +307,33 @@ export default function FinancialAnalysis() {
       const rows = matrixToRows(matrix);
       const detectedUnit = detectUnit(matrix, unit);
       const detectedCurrency = detectCurrency(matrix, currency);
+      const csvSheet = { name: "CSV", rows: matrix.map((row) => row.map(toWorkbookCell)) };
       setUnit(detectedUnit);
       setCurrency(detectedCurrency);
+      setRawSheets([csvSheet]);
       const result = await service.preview({ companyId: selectedCompanyId, unit: detectedUnit, rows });
       setFile(selectedFile);
       setPreview(result);
-    } catch (reason) { setFile(null); setError(getErrorMessage(reason)); }
+    } catch (reason) { setFile(null); setRawSheets([]); setError(getErrorMessage(reason)); }
     finally { setBusy(false); }
   };
 
   const changeMapping = (index: number, canonicalCode: string) => {
-    setPreview((current) => current ? {
-      ...current,
-      rows: current.rows.map((row, rowIndex) => rowIndex === index ? { ...row, canonicalCode: canonicalCode || null, confidence: canonicalCode ? 1 : 0, mappingSource: "MANUAL" } : row),
-    } : current);
+    setPreview((current) => {
+      if (!current) return current;
+      const rows = current.rows.map((row, rowIndex) => rowIndex === index ? { ...row, canonicalCode: canonicalCode || null, confidence: canonicalCode ? 1 : 0, mappingSource: "MANUAL" } : row);
+      return { ...current, rows, requiresMapping: rows.filter((row) => !row.canonicalCode || row.confidence < 0.7).length };
+    });
+  };
+
+  const approveMapping = (index: number) => {
+    setPreview((current) => {
+      if (!current) return current;
+      const rows = current.rows.map((row, rowIndex) => rowIndex === index && row.canonicalCode
+        ? { ...row, confidence: 1, mappingSource: "MANUAL" }
+        : row);
+      return { ...current, rows, requiresMapping: rows.filter((row) => !row.canonicalCode || row.confidence < 0.7).length };
+    });
   };
 
   const revalidate = async () => {
@@ -318,14 +346,14 @@ export default function FinancialAnalysis() {
 
   const saveImport = async () => {
     if (!preview || !file || !selectedCompanyId) return;
-    const unresolved = preview.rows.filter((row) => !row.canonicalCode);
-    if (unresolved.length) { setError(`กรุณา map บัญชีให้ครบอีก ${unresolved.length} รายการ`); return; }
+    const unresolved = preview.rows.filter((row) => !row.canonicalCode || row.confidence < 0.7);
+    if (unresolved.length) { setError(`กรุณา map หรือยืนยันบัญชีความมั่นใจต่ำอีก ${unresolved.length} รายการ`); return; }
     setBusy(true); setError("");
     try {
-      await service.importStatement({ companyId: selectedCompanyId, fileName: file.name, fileType: file.name.split(".").pop()?.toUpperCase() || "UNKNOWN", currency, unit, rows: preview.rows });
+      await service.importStatement({ companyId: selectedCompanyId, fileName: file.name, fileType: file.name.split(".").pop()?.toUpperCase() || "UNKNOWN", currency, unit, rows: preview.rows, rawSource: rawSheets.length ? { scope: preferredScope, sheets: rawSheets } : undefined });
       setDashboard(await service.dashboard(selectedCompanyId));
       setNotice(`นำเข้า ${file.name} สำเร็จ`);
-      setFile(null); setPreview(null); setTab("overview");
+      setFile(null); setRawSheets([]); setPreview(null); setTab("overview");
     } catch (reason) { setError(getErrorMessage(reason)); }
     finally { setBusy(false); }
   };
@@ -366,7 +394,7 @@ export default function FinancialAnalysis() {
           </section>
           <section className="fa-two-column">
             <article className="fa-panel"><div className="fa-panel-heading"><div><span className="fa-eyebrow">ASSET MIX</span><h3>สัดส่วนสินทรัพย์</h3></div></div><div className="fa-composition">{[{ code: "ASSET.CASH", label: "เงินสด" }, { code: "ASSET.RECEIVABLE", label: "ลูกหนี้" }, { code: "ASSET.INVENTORY", label: "สินค้าคงเหลือ" }, { code: "ASSET.PPE", label: "ที่ดิน อาคาร อุปกรณ์" }, { code: "ASSET.INVESTMENT", label: "เงินลงทุน" }].map((item) => { const percent = latest.metrics.totalAssets ? ((latest.values[item.code] ?? 0) / latest.metrics.totalAssets) * 100 : 0; return <div key={item.code}><span>{item.label}</span><div><i style={{ width: `${Math.min(percent, 100)}%` }} /></div><strong>{percent.toFixed(1)}%</strong></div>; })}</div></article>
-            <article className="fa-panel"><div className="fa-panel-heading"><div><span className="fa-eyebrow">DETERMINISTIC SUMMARY</span><h3>สรุปภาพรวม</h3></div></div><p className="fa-summary">{dashboard.summary}</p><small className="fa-disclaimer"><i className="pi pi-info-circle" /> สรุปจาก metrics และ rule ที่คำนวณได้ ไม่ใช่คำแนะนำการลงทุน</small></article>
+            <article className="fa-panel"><div className="fa-panel-heading"><div><span className="fa-eyebrow">{aiSummary?.status === "COMPLETED" ? "AI SUMMARY · VERIFIED METRICS" : "DETERMINISTIC SUMMARY"}</span><h3>สรุปภาพรวม</h3></div><button className="fa-button secondary" type="button" disabled={aiSummaryBusy} onClick={() => void generateAiSummary()}>{aiSummaryBusy ? <i className="pi pi-spin pi-spinner" /> : <i className="pi pi-sparkles" />} {aiSummary ? "สร้างใหม่" : "ให้ AI อธิบาย"}</button></div><p className="fa-summary">{aiSummary?.summaryMarkdown || dashboard.summary}</p>{aiSummary?.evidenceKeys.length ? <small className="fa-ai-evidence">Evidence: {aiSummary.evidenceKeys.join(" · ")}</small> : null}<small className="fa-disclaimer"><i className="pi pi-info-circle" /> AI รับเฉพาะ metrics และ signals ที่ backend คำนวณแล้ว ไม่ใช่คำแนะนำการลงทุน</small></article>
           </section>
           <section className="fa-panel"><div className="fa-panel-heading"><div><span className="fa-eyebrow">SIGNAL FEED</span><h3>สัญญาณที่ควรติดตาม</h3></div></div><div className="fa-signals">{dashboard.signals.map((signal) => <article className={signal.severity} key={signal.id}><i className={`pi ${signal.severity === "info" ? "pi-info-circle" : "pi-exclamation-triangle"}`} /><div><h4>{signal.title}</h4><p>{signal.message}</p><ul>{signal.evidence.map((evidence) => <li key={evidence}>{evidence}</li>)}</ul></div></article>)}</div></section>
           <section className="fa-panel"><div className="fa-panel-heading"><div><span className="fa-eyebrow">HISTORY & AUDIT</span><h3>งบดุลย้อนหลัง</h3></div><span>คลิกตัวเลขเพื่อดูต้นทาง</span></div><div className="fa-table-wrap"><table className="fa-history-table"><thead><tr><th>บัญชีมาตรฐาน</th>{dashboard.periods.map((period) => <th key={period.periodEnd}>{period.periodEnd}</th>)}</tr></thead><tbody>{importantAccounts.map((code) => <tr key={code}><th><span>{accountMap.get(code)?.name || code}</span><small>{code}</small></th>{dashboard.periods.map((period) => <td key={period.periodEnd}><button type="button" disabled={!period.sources[code]} onClick={() => period.sources[code] && setSelectedSource({ label: accountMap.get(code)?.name || code, period: period.periodEnd, source: period.sources[code] })}>{formatMoney(period.values[code] ?? 0, currentCompany.default_currency)}</button></td>)}</tr>)}</tbody></table></div></section>
@@ -380,10 +408,10 @@ export default function FinancialAnalysis() {
             <div className="fa-import-meta"><label><span>บริษัท</span><select value={selectedCompanyId ?? ""} onChange={(event) => setSelectedCompanyId(event.target.value ? Number(event.target.value) : null)}><option value="">เลือกบริษัท</option>{companies.map((company) => <option value={company.id} key={company.id}>{company.name}</option>)}</select></label><label><span>ขอบเขตงบ</span><select value={preferredScope} onChange={(event) => { const nextScope = event.target.value as FinancialScope; setPreferredScope(nextScope); if (file?.name.toLowerCase().endsWith(".xlsx")) void processFile(file, nextScope); }}><option value="CONSOLIDATED">งบการเงินรวม</option><option value="SEPARATE">งบเฉพาะกิจการ</option></select></label><label><span>สกุลเงิน</span><select value={currency} onChange={(event) => setCurrency(event.target.value)}><option>THB</option><option>USD</option><option>EUR</option><option>JPY</option></select></label><label><span>หน่วยในไฟล์</span><select value={unit} onChange={(event) => setUnit(event.target.value as FinancialUnit)}><option value="ONES">หน่วย</option><option value="THOUSAND">พัน</option><option value="MILLION">ล้าน</option><option value="BILLION">พันล้าน</option></select></label></div>
             <div className="fa-dropzone" onClick={() => fileRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const dropped = event.dataTransfer.files[0]; if (dropped) void processFile(dropped); }}><input ref={fileRef} type="file" accept=".csv,.xlsx" onChange={(event) => { const selected = event.target.files?.[0]; if (selected) void processFile(selected); }} /><i className="pi pi-cloud-upload" /><h4>{file ? file.name : "วางไฟล์ที่นี่ หรือคลิกเพื่อเลือกไฟล์"}</h4><p>XLSX ใช้ AI อ่านหลาย sheet เป็น format กลาง · ตัวเลขทุกค่าตรวจกลับกับ cell ต้นทางก่อนแสดง</p>{busy && <span><i className="pi pi-spin pi-spinner" /> กำลังอ่านและตรวจสอบไฟล์</span>}</div>
           </section>
-          {preview && <><section className="fa-panel"><div className="fa-panel-heading"><div><span className="fa-eyebrow">MAPPING REVIEW</span><h3>ตรวจสอบบัญชีมาตรฐาน</h3></div><span className={preview.requiresMapping ? "fa-count warning" : "fa-count success"}>{preview.rows.filter((row) => row.canonicalCode).length}/{preview.rows.length} mapped</span></div><div className="fa-table-wrap"><table className="fa-mapping-table"><thead><tr><th>ต้นฉบับ</th><th>Canonical Account</th><th>Confidence</th><th>งวดที่พบ</th></tr></thead><tbody>{preview.rows.map((row, index) => <tr className={!row.canonicalCode ? "needs-review" : ""} key={`${row.sourceSheet ?? "sheet"}-${row.sourceRow}-${row.originalLabel}`}><td><strong>{row.originalLabel}</strong><small>{row.sourceSheet ? `${row.sourceSheet} · ` : ""}แถว {row.sourceRow}</small></td><td><select value={row.canonicalCode ?? ""} onChange={(event) => changeMapping(index, event.target.value)}><option value="">— เลือกบัญชี —</option>{["ASSET", "LIABILITY", "EQUITY"].map((category) => <optgroup label={category} key={category}>{accounts.filter((account) => account.category === category).map((account) => <option value={account.code} key={account.code}>{account.name} ({account.code})</option>)}</optgroup>)}</select></td><td><span className={`fa-confidence ${row.confidence >= 0.85 ? "high" : row.confidence >= 0.7 ? "medium" : "low"}`}>{Math.round(row.confidence * 100)}%</span><small>{row.mappingSource}</small></td><td>{row.values.map((value) => value.periodEnd.slice(0, 4)).join(", ")}</td></tr>)}</tbody></table></div><div className="fa-panel-actions"><button className="fa-button secondary" type="button" onClick={() => void revalidate()} disabled={busy}><i className="pi pi-refresh" /> ตรวจสมการใหม่</button></div></section>
+          {preview && <><section className="fa-panel"><div className="fa-panel-heading"><div><span className="fa-eyebrow">MAPPING REVIEW</span><h3>ตรวจสอบบัญชีมาตรฐาน</h3></div><span className={preview.requiresMapping ? "fa-count warning" : "fa-count success"}>{preview.rows.filter((row) => row.canonicalCode && row.confidence >= 0.7).length}/{preview.rows.length} ready</span></div><div className="fa-table-wrap"><table className="fa-mapping-table"><thead><tr><th>ต้นฉบับ</th><th>Canonical Account</th><th>Confidence</th><th>งวดที่พบ</th></tr></thead><tbody>{preview.rows.map((row, index) => <tr className={!row.canonicalCode || row.confidence < 0.7 ? "needs-review" : ""} key={`${row.sourceSheet ?? "sheet"}-${row.sourceRow}-${row.originalLabel}`}><td><strong>{row.originalLabel}</strong><small>{row.sourceSheet ? `${row.sourceSheet} · ` : ""}แถว {row.sourceRow}</small></td><td><select value={row.canonicalCode ?? ""} onChange={(event) => changeMapping(index, event.target.value)}><option value="">— เลือกบัญชี —</option>{["ASSET", "LIABILITY", "EQUITY"].map((category) => <optgroup label={category} key={category}>{accounts.filter((account) => account.category === category).map((account) => <option value={account.code} key={account.code}>{account.name} ({account.code})</option>)}</optgroup>)}</select></td><td><span className={`fa-confidence ${row.confidence >= 0.85 ? "high" : row.confidence >= 0.7 ? "medium" : "low"}`}>{Math.round(row.confidence * 100)}%</span><small>{row.mappingSource}</small>{row.canonicalCode && row.confidence < 0.7 ? <button className="fa-inline-approve" type="button" onClick={() => approveMapping(index)}>ยืนยัน Mapping</button> : null}</td><td>{row.values.map((value) => value.periodEnd.slice(0, 4)).join(", ")}</td></tr>)}</tbody></table></div><div className="fa-panel-actions"><button className="fa-button secondary" type="button" onClick={() => void revalidate()} disabled={busy}><i className="pi pi-refresh" /> ตรวจสมการใหม่</button></div></section>
           <section className="fa-validation-grid">{preview.validation.map((item) => <article className={item.status.toLowerCase()} key={item.periodEnd}><div><i className={`pi ${item.status === "PASS" ? "pi-check-circle" : "pi-exclamation-triangle"}`} /><span>{item.periodEnd}</span><strong>{item.status}</strong></div><p>Assets = Liabilities + Equity</p><dl><div><dt>Assets</dt><dd>{formatMoney(item.totalAssets, currency)}</dd></div><div><dt>Liabilities + Equity</dt><dd>{formatMoney(item.totalLiabilities + item.totalEquity, currency)}</dd></div><div><dt>Difference</dt><dd>{formatMoney(item.difference, currency)} ({item.differencePercent.toFixed(2)}%)</dd></div></dl></article>)}</section>
           {preview.duplicates.length > 0 && <div className="fa-alert error"><i className="pi pi-clone" /><span>พบบัญชีซ้ำ {preview.duplicates.map((item) => `${item.canonicalCode} (${item.periodEnd})`).join(", ")}</span></div>}
-          <div className="fa-import-submit"><div><strong>พร้อมนำเข้า {preview.rows.length} บัญชี</strong><p>ระบบจะเก็บค่าต้นฉบับ, แถวต้นทาง และ mapping confidence ไว้ตรวจสอบย้อนหลัง</p></div><button className="fa-button primary" type="button" disabled={busy || preview.rows.some((row) => !row.canonicalCode) || preview.duplicates.length > 0} onClick={() => void saveImport()}>{busy ? <i className="pi pi-spin pi-spinner" /> : <i className="pi pi-check" />} บันทึกและวิเคราะห์</button></div></>}
+          <div className="fa-import-submit"><div><strong>พร้อมนำเข้า {preview.rows.length} บัญชี</strong><p>ระบบจะเก็บ raw workbook, ค่าต้นฉบับ, sheet/row/column และ mapping confidence ไว้ตรวจสอบย้อนหลัง</p></div><button className="fa-button primary" type="button" disabled={busy || preview.requiresMapping > 0 || preview.duplicates.length > 0} onClick={() => void saveImport()}>{busy ? <i className="pi pi-spin pi-spinner" /> : <i className="pi pi-check" />} บันทึกและวิเคราะห์</button></div></>}
         </div>
       )}
 
