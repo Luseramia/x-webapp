@@ -22,6 +22,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, isLoggedIn, onLogout 
                     </NavLink>
                 {isLoggedIn && (
                     <nav className="main-nav">
+                        <NavLink to="/financial-analysis" className={({ isActive }) => (isActive ? "nav-link investment-nav active" : "nav-link investment-nav")}>
+                            <i className="pi pi-chart-bar" aria-hidden="true" /> วิเคราะห์งบการเงิน
+                        </NavLink>
                         {/* <NavLink to="/home" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                             หน้าหลัก
                         </NavLink> */}

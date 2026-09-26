@@ -12,6 +12,7 @@ import MyFiles from '../components/my-files';
 import PublicFiles from '../components/public-files';
 import CryptoAnalysis from '../components/crypto-analysis';
 import CryptoNews from '../components/crypto-news';
+import FinancialAnalysis from '../components/financial-analysis/FinancialAnalysis';
 
 interface AppRoutesProps {
     isLoggedIn: boolean;
@@ -72,6 +73,10 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ isLoggedIn, onLogin }) => {
             <Route
                 path="/crypto-news"
                 element={isLoggedIn ? <CryptoNews /> : <Navigate to="/login" />}
+            />
+            <Route
+                path="/financial-analysis"
+                element={isLoggedIn ? <FinancialAnalysis /> : <Navigate to="/login" />}
             />
             <Route
                 path="/"

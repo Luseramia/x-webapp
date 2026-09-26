@@ -7,6 +7,11 @@ const HomeMenu: React.FC = () => {
         <div className="home-menu-container">
             <h2 className="home-title">เลือกเมนูการใช้งาน</h2>
             <div className="menu-grid">
+                <Link to="/financial-analysis" className="menu-card financial-analysis-card">
+                    <div className="card-icon"><i className="pi pi-chart-bar" /></div>
+                    <h3>วิเคราะห์งบการเงิน</h3>
+                    <p>นำเข้า Balance Sheet จาก CSV/Excel ดูอัตราส่วน แนวโน้ม และสัญญาณความเสี่ยง</p>
+                </Link>
                 <Link to="/videos" className="menu-card watch-card">
                     <div className="card-icon">📺</div>
                     <h3>หน้าแรก (วีดีโอ)</h3>
