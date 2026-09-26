@@ -1,6 +1,13 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 
 export type FinancialUnit = "ONES" | "THOUSAND" | "MILLION" | "BILLION";
+export type FinancialScope = "CONSOLIDATED" | "SEPARATE";
+export type WorkbookCell = string | number | boolean | null;
+
+export interface WorkbookSheet {
+  name: string;
+  rows: WorkbookCell[][];
+}
 
 export interface FinancialCompany {
   id: number;
@@ -25,6 +32,7 @@ export interface ImportValue {
   periodEnd: string;
   value: number;
   originalValue: string;
+  sourceColumn?: number;
 }
 
 export interface FinancialImportRow {
@@ -32,6 +40,7 @@ export interface FinancialImportRow {
   canonicalCode?: string | null;
   confidence?: number;
   mappingSource?: string;
+  sourceSheet?: string;
   sourceRow: number;
   values: ImportValue[];
 }
@@ -51,6 +60,14 @@ export interface PreviewResult {
   validation: ValidationResult[];
   duplicates: Array<{ periodEnd: string; canonicalCode: string }>;
   requiresMapping: number;
+}
+
+export interface AiPreviewResult extends PreviewResult {
+  currency: string;
+  unit: FinancialUnit;
+  scope: FinancialScope;
+  normalizationWarnings: string[];
+  requiresHumanReview: true;
 }
 
 export interface FinancialMetrics {
@@ -81,7 +98,9 @@ export interface FinancialSource {
   documentId: number;
   originalLabel: string;
   originalValue: string;
+  sourceSheet?: string | null;
   sourceRow: number;
+  sourceColumn?: number | null;
   confidence: number;
 }
 
@@ -138,6 +157,20 @@ export default class FinancialAnalysisService {
 
   preview(input: { companyId: number; unit: FinancialUnit; rows: FinancialImportRow[] }) {
     return request<PreviewResult>("/preview", { method: "POST", body: JSON.stringify(input) });
+  }
+
+  aiPreview(input: {
+    companyId: number;
+    fileName: string;
+    preferredScope: FinancialScope;
+    currencyHint?: string;
+    unitHint?: FinancialUnit;
+    sheets: WorkbookSheet[];
+  }) {
+    return request<AiPreviewResult>("/ai-preview", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
   }
 
   importStatement(input: { companyId: number; fileName: string; fileType: string; currency: string; unit: FinancialUnit; rows: FinancialImportRow[] }) {

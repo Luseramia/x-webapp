@@ -148,7 +148,7 @@
 .fa-import-steps span { padding: 0.75rem; color: #98a7a4; text-align: center; font-size: 0.75rem; font-weight: 700; border-right: 1px solid var(--fa-line); }
 .fa-import-steps span:last-child { border: 0; }
 .fa-import-steps span.active { color: var(--fa-green-dark); background: var(--fa-green-soft); }
-.fa-import-meta { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.8rem; margin-bottom: 1rem; }
+.fa-import-meta { display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr; gap: 0.8rem; margin-bottom: 1rem; }
 .fa-dropzone { min-height: 190px; display: grid; place-items: center; align-content: center; gap: 0.5rem; padding: 1rem; border: 1.5px dashed #a9ccc5; border-radius: 12px; background: #f6fbf9; text-align: center; cursor: pointer; }
 .fa-dropzone input { display: none; }
 .fa-dropzone > i { color: var(--fa-green); font-size: 2.2rem; }
