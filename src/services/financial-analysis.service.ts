@@ -1,5 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-  ?? (import.meta.env.PROD ? "https://sso-backend.tarchunk.win" : "http://localhost:3000");
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 export type FinancialUnit = "ONES" | "THOUSAND" | "MILLION" | "BILLION";
 export type FinancialScope = "CONSOLIDATED" | "SEPARATE";
@@ -69,6 +68,13 @@ export interface AiPreviewResult extends PreviewResult {
   scope: FinancialScope;
   normalizationWarnings: string[];
   requiresHumanReview: true;
+}
+
+interface AiPreviewJob {
+  jobId: string;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  result?: AiPreviewResult;
+  error?: string;
 }
 
 export interface FinancialAiSummary {
@@ -168,7 +174,7 @@ export default class FinancialAnalysisService {
     return request<PreviewResult>("/preview", { method: "POST", body: JSON.stringify(input) });
   }
 
-  aiPreview(input: {
+  async aiPreview(input: {
     companyId: number;
     fileName: string;
     preferredScope: FinancialScope;
@@ -176,10 +182,23 @@ export default class FinancialAnalysisService {
     unitHint?: FinancialUnit;
     sheets: WorkbookSheet[];
   }) {
-    return request<AiPreviewResult>("/ai-preview", {
+    const started = await request<AiPreviewJob>("/ai-preview-jobs", {
       method: "POST",
       body: JSON.stringify(input),
     });
+    const deadline = Date.now() + 1_350_000;
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+      const job = await request<AiPreviewJob>(`/ai-preview-jobs/${started.jobId}`);
+      if (job.status === "COMPLETED") {
+        if (!job.result) throw new Error("AI preview completed without a result");
+        return job.result;
+      }
+      if (job.status === "FAILED") {
+        throw new Error(job.error || "AI preview failed");
+      }
+    }
+    throw new Error("AI preview timed out");
   }
 
   importStatement(input: { companyId: number; fileName: string; fileType: string; currency: string; unit: FinancialUnit; rows: FinancialImportRow[]; rawSource?: { scope: FinancialScope; sheets: WorkbookSheet[] } }) {
