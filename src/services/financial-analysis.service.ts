@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+  ?? (import.meta.env.PROD ? "https://sso-backend.tarchunk.win" : "http://localhost:3000");
 
 export type FinancialUnit = "ONES" | "THOUSAND" | "MILLION" | "BILLION";
 export type FinancialScope = "CONSOLIDATED" | "SEPARATE";
