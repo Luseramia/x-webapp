@@ -1,0 +1,12 @@
+{
+  "source": "statsmodels 0.15.0",
+  "parameters": "300 deterministic observations; formation=180; constant; maxlag=1; autolag=None",
+  "alpha": 15.795708255624241,
+  "beta": 1.3653842366550193,
+  "cointStatistic": -5.61673335618224,
+  "cointCritical5": -3.3704775827845572,
+  "adfLevelA": -1.1519249655280301,
+  "adfDifferenceB": -10.879921781773653,
+  "adfCritical5": -2.8779183721695567,
+  "halfLife": 1.7620608743035635
+}

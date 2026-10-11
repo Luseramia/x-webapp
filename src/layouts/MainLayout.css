@@ -23,8 +23,29 @@
 
 .main-nav {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     align-items: center;
     gap: 1.5rem;
+}
+
+.investment-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #5f6d68;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 0.55rem 0.8rem;
+    border-radius: 8px;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.investment-nav:hover,
+.investment-nav.active {
+    color: #19766c;
+    background: #eaf4f1;
 }
 
 
@@ -59,4 +80,24 @@
 .logout-button:hover {
     background: #ff4d4f;
     color: white;
+}
+
+@media (max-width: 600px) {
+    .app-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .logo-section h1 {
+        display: none;
+    }
+
+    .main-nav {
+        gap: 0.4rem;
+    }
+
+    .investment-nav,
+    .logout-button {
+        font-size: 0.75rem;
+        padding: 0.45rem 0.65rem;
+    }
 }

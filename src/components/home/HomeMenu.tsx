@@ -7,10 +7,20 @@ const HomeMenu: React.FC = () => {
         <div className="home-menu-container">
             <h2 className="home-title">เลือกเมนูการใช้งาน</h2>
             <div className="menu-grid">
+                <Link to="/quant-analysis" className="menu-card finance-card">
+                    <div className="card-icon"><i className="pi pi-sliders-h" aria-hidden="true" /></div>
+                    <h3>Quant Lab</h3>
+                    <p>วิเคราะห์ SD, Mean Reversion และ Pair Trading ของหุ้น/ETF สหรัฐฯ พร้อมราคาจริงและ Backtest</p>
+                </Link>
                 <Link to="/financial-analysis" className="menu-card financial-analysis-card">
                     <div className="card-icon"><i className="pi pi-chart-bar" /></div>
                     <h3>วิเคราะห์งบการเงิน</h3>
                     <p>นำเข้า Balance Sheet จาก CSV/Excel ดูอัตราส่วน แนวโน้ม และสัญญาณความเสี่ยง</p>
+                </Link>
+                <Link to="/investments" className="menu-card investment-card">
+                    <div className="card-icon">📊</div>
+                    <h3>พอร์ตการลงทุน</h3>
+                    <p>บันทึกต้นทุนเฉลี่ย มูลค่าปัจจุบัน และติดตามกำไรขาดทุนของทุกสินทรัพย์</p>
                 </Link>
                 <Link to="/videos" className="menu-card watch-card">
                     <div className="card-icon">📺</div>

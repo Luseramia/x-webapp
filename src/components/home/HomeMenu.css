@@ -66,5 +66,6 @@
 /* Optional: specific styles for cards if desired */
 .upload-card:hover { border-color: #4CAF50; }
 .finance-card:hover { border-color: #2196F3; }
+.investment-card:hover { border-color: #2a9d8f; }
 .financial-analysis-card:hover { border-color: #18776e; }
 .financial-analysis-card .card-icon { color: #18776e; }
