@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+import { apiUrl } from "./api-base-url";
 
 export type FinancialUnit = "ONES" | "THOUSAND" | "MILLION" | "BILLION";
 export type FinancialScope = "CONSOLIDATED" | "SEPARATE";
@@ -148,7 +148,7 @@ const authHeaders = () => {
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}/financial-analysis${path}`, {
+  const response = await fetch(apiUrl(`financial-analysis${path}`), {
     ...init,
     headers: { ...authHeaders(), ...init?.headers },
   });

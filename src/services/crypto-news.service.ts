@@ -57,13 +57,7 @@ export default class CryptoNewsService {
   }
 
   async remove(id: number): Promise<void> {
-    const token = localStorage.getItem("token");
-    const baseUrl =
-      (this.globalApi as any).baseUrl ?? "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/crypto-news/${id}`, {
-      method: "DELETE",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await this.globalApi.authDelete(`crypto-news/${id}`);
     if (!res.ok) throw new Error("ลบไม่สำเร็จ");
   }
 }

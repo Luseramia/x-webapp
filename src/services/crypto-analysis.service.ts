@@ -121,14 +121,7 @@ export default class CryptoAnalysisService {
   }
 
   async remove(id: number): Promise<void> {
-    const token = localStorage.getItem("token");
-    const res = await fetch(
-      `${(this.globalApi as any).baseUrl ?? "http://localhost:3000"}/crypto-analysis/${id}`,
-      {
-        method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      },
-    );
+    const res = await this.globalApi.authDelete(`crypto-analysis/${id}`);
     if (!res.ok) throw new Error("ลบไม่สำเร็จ");
   }
 }

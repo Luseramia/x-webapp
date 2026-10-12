@@ -4,7 +4,7 @@
 
 ## เริ่มใช้งาน
 
-1. รัน backend `bun-sso` ที่มี Quant API และ migration ด้านล่าง; frontend ใช้ `VITE_API_BASE_URL` (ค่าเริ่มต้น `http://localhost:3000`)
+1. รัน backend `bun-sso` ที่มี Quant API และ migration ด้านล่าง; frontend ใช้ URL ตาม [API base URL convention](api-base-url-convention.md) (dev: `http://localhost:3000`, build/deploy: `/api`)
 2. กรอกหุ้น/ETF สหรัฐฯ ทีละตัว เช่น CWEN, PFE, VOO, VTI, QQQM เลือกประวัติ 252, 504 หรือ 1,000 วัน แล้วกด **เก็บราคาตัวนี้** หากต้องดึงข้อมูลใหม่ ใช้ [Twelve Data API key](https://twelvedata.com/account/api-keys) ในหน้า Quant Lab หรือตั้ง `TWELVEDATA_API_KEY` ใน environment ของ backend
 3. เลือก A และ B จาก **คลังราคาของฉัน** แล้วกด **วิเคราะห์คู่จาก DB** ขั้นนี้อ่านราคาใน PostgreSQL เท่านั้น ไม่เรียก Twelve Data และเลือกจับคู่ใหม่จากหุ้นเดิมได้เรื่อย ๆ
 4. ผลวิเคราะห์เริ่มต้นจะบันทึกใน PostgreSQL อัตโนมัติ; ดู Pair trading, SD & Mean reversion หรือ Backtest ได้

@@ -1,5 +1,6 @@
 import type { PriceSeries } from "./twelve-data.ts";
 import type { QuantSettings, analyzePair } from "./quant-analysis.ts";
+import { apiUrl } from "./api-base-url.ts";
 export { normalizeSymbol } from "./twelve-data.ts";
 export type { PriceBar, PriceSeries } from "./twelve-data.ts";
 
@@ -39,13 +40,11 @@ export interface SavedQuantRun extends SavedQuantRunSummary {
   result: ReturnType<typeof analyzePair>;
 }
 
-const baseUrl = (import.meta.env?.VITE_API_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
-
 async function request<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("กรุณาเข้าสู่ระบบก่อนใช้งาน Quant Lab");
   try {
-    const response = await fetch(`${baseUrl}/quant${path}`, {
+    const response = await fetch(apiUrl(`quant${path}`), {
       method: body === undefined ? "GET" : "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),

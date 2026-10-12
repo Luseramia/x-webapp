@@ -1,12 +1,11 @@
 import axios from "axios";
 import { errortoast } from "../utilities/toast";
+import { apiUrl } from "./api-base-url";
+export { API_BASE_URL, apiUrl } from "./api-base-url";
 
-// const baseUrl = "https://sso-backend.tarchunk.win";
-// const baseUrl = "http://localhost:3000";
-const baseUrl = '/api'
 export default class GlobalApi {
   public post = async (endpoint: string, body: any) => {
-    return await fetch(`${baseUrl}/${endpoint}`, {
+    return await fetch(apiUrl(endpoint), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -16,7 +15,7 @@ export default class GlobalApi {
   };
   public authGet = async (endpoint: string) => {
     const token = localStorage.getItem("token");
-    return await fetch(`${baseUrl}/${endpoint}`, {
+    return await fetch(apiUrl(endpoint), {
       method: "GET",
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -26,7 +25,7 @@ export default class GlobalApi {
 
   public authPost = async (endpoint: string, body: any) => {
     const token = localStorage.getItem("token");
-    return await fetch(`${baseUrl}/${endpoint}`, {
+    return await fetch(apiUrl(endpoint), {
       method: "POST",
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -37,7 +36,7 @@ export default class GlobalApi {
 
   public authPostJson = async (endpoint: string, body: any) => {
     const token = localStorage.getItem("token");
-    return await fetch(`${baseUrl}/${endpoint}`, {
+    return await fetch(apiUrl(endpoint), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -47,13 +46,23 @@ export default class GlobalApi {
     });
   };
 
+  public authDelete = async (endpoint: string) => {
+    const token = localStorage.getItem("token");
+    return await fetch(apiUrl(endpoint), {
+      method: "DELETE",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+  };
+
   // public uploadFile = (
   //   endpoint: string,
   //   file: File,
   //   onProgress: (percent: number) => void,
   // ) => {
   //   const token = localStorage.getItem("token");
-  //   return axios.post(baseUrl + "/" + endpoint, file, {
+  //   return axios.post(apiUrl(endpoint), file, {
   //     timeout: 0,
   //     headers: {
   //       "Content-Type": "application/octet-stream",
@@ -118,7 +127,7 @@ export default class GlobalApi {
   ) => {
     const token = localStorage.getItem("token");
     try {
-      const response = await axios.post(baseUrl + "/" + endpoint, fromData, {
+      const response = await axios.post(apiUrl(endpoint), fromData, {
         timeout: 0,
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -167,7 +176,7 @@ export default class GlobalApi {
     const token = localStorage.getItem("token");
 
     try {
-      const response = await axios.post(baseUrl + "/" + endpoint, file, {
+      const response = await axios.post(apiUrl(endpoint), file, {
         timeout: 0,
         headers: {
           "Content-Type": "application/octet-stream",

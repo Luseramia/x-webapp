@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
+import { apiUrl } from "./api-base-url";
 
 export type InvestmentAssetType =
   | "หุ้นไทย"
@@ -51,7 +51,7 @@ const parseResponse = async <T>(response: Response): Promise<T> => {
 
 export default class InvestmentService {
   async list(): Promise<InvestmentHoldingRecord[]> {
-    const response = await fetch(`${API_BASE_URL}/investments/list`, {
+    const response = await fetch(apiUrl("investments/list"), {
       headers: authHeaders(),
     });
     const body = await parseResponse<{ data: InvestmentHoldingRecord[] }>(response);
@@ -59,7 +59,7 @@ export default class InvestmentService {
   }
 
   async create(payload: InvestmentHoldingInput): Promise<InvestmentHoldingRecord> {
-    const response = await fetch(`${API_BASE_URL}/investments/save`, {
+    const response = await fetch(apiUrl("investments/save"), {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(payload),
@@ -69,7 +69,7 @@ export default class InvestmentService {
   }
 
   async update(id: number, payload: InvestmentHoldingInput): Promise<InvestmentHoldingRecord> {
-    const response = await fetch(`${API_BASE_URL}/investments/${id}`, {
+    const response = await fetch(apiUrl(`investments/${id}`), {
       method: "PUT",
       headers: authHeaders(),
       body: JSON.stringify(payload),
@@ -79,7 +79,7 @@ export default class InvestmentService {
   }
 
   async remove(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/investments/${id}`, {
+    const response = await fetch(apiUrl(`investments/${id}`), {
       method: "DELETE",
       headers: authHeaders(),
     });
