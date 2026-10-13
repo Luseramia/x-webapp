@@ -54,6 +54,10 @@
 .investment-button.secondary:hover:not(:disabled) { border-color: #b7c2bd; }
 
 .investment-summary-grid { display: grid; grid-template-columns: 1.18fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+.investment-fx-note { align-items: center; background: #f0f6f4; border: 1px solid #d9e9e4; border-radius: 8px; color: #52635e; display: flex; font-size: 0.69rem; gap: 12px; justify-content: space-between; margin: -3px 0 15px; padding: 9px 13px; }
+.investment-fx-note.error { background: #fff7f2; border-color: #f0d4c5; color: #a34e35; }
+.investment-fx-note button { background: transparent; border: 0; color: var(--green); cursor: pointer; flex: 0 0 auto; font: 600 0.68rem "Noto Sans Thai", "Leelawadee UI", sans-serif; padding: 3px 0; }
+.investment-fx-note button:disabled { cursor: wait; opacity: 0.65; }
 .investment-summary-card,
 .investment-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 7px 30px rgba(37, 53, 47, 0.035); }
 .investment-summary-card { padding: 21px 22px; min-height: 145px; position: relative; overflow: hidden; }
@@ -111,6 +115,10 @@
 .holdings-panel { padding: 0; overflow: hidden; }
 .holdings-toolbar { align-items: center; padding: 22px; }
 .holdings-tools { display: flex; gap: 9px; }
+.investment-price-refresh { font-size: 0.72rem; min-height: 38px; white-space: nowrap; }
+.investment-price-status { align-items: center; border-top: 1px solid var(--line); color: var(--muted); display: flex; font-size: 0.69rem; gap: 12px; justify-content: space-between; padding: 10px 22px; }
+.investment-price-status a { color: var(--green); font-weight: 600; white-space: nowrap; }
+.investment-price-error { color: var(--red); }
 .investment-search { align-items: center; background: #f7f8f7; border: 1px solid #e5e9e6; border-radius: 8px; color: #89928e; display: flex; gap: 8px; height: 38px; padding: 0 11px; width: 230px; }
 .investment-search i { font-size: 0.8rem; }
 .investment-search input { background: transparent; border: 0; color: var(--ink); font: 400 0.75rem "Noto Sans Thai", "Leelawadee UI", sans-serif; outline: none; width: 100%; }
@@ -162,6 +170,7 @@
 .modal-header p { color: var(--muted); font-size: 0.7rem; margin: 5px 0 0; }
 .modal-header > button:hover { background: #f0f3f1; color: var(--ink); }
 .investment-form { margin-top: 23px; }
+.investment-cost-help { background: #f6f8f7; border-radius: 7px; color: var(--muted); font-size: 0.7rem; margin: 0 0 14px; padding: 9px 11px; }
 .form-grid.two-columns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
 .investment-form label { display: flex; flex-direction: column; gap: 6px; }
 .investment-form label > span { color: #53605b; font-size: 0.69rem; font-weight: 600; }
@@ -172,6 +181,7 @@
 .investment-form select { height: 41px; }
 .investment-form textarea { resize: vertical; }
 .form-calculation { background: #f0f6f4; border: 1px solid #d9e9e4; border-radius: 9px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 17px 0; padding: 12px 15px; }
+.investment-quant-form-note { color: var(--green-dark); font-size: 0.7rem; margin: 13px 0 -3px; }
 .form-calculation > div { align-items: center; display: flex; justify-content: space-between; }
 .form-calculation span { color: #687570; font-size: 0.67rem; }
 .form-calculation strong { color: var(--green-dark); font-size: 0.78rem; }
@@ -196,7 +206,9 @@
   .trend-metric { padding-bottom: 0; }
   .holdings-toolbar { align-items: stretch; flex-direction: column; }
   .holdings-tools { width: 100%; }
+  .investment-price-status { align-items: flex-start; flex-direction: column; gap: 3px; }
   .investment-search { flex: 1; width: auto; }
+  .investment-fx-note { align-items: flex-start; flex-direction: column; gap: 4px; }
   .holdings-footer { align-items: flex-start; flex-direction: column; gap: 3px; }
   .form-grid.two-columns { grid-template-columns: 1fr; }
   .form-calculation { grid-template-columns: 1fr; }
@@ -205,6 +217,7 @@
 @media (max-width: 470px) {
   .investment-hero-actions,
   .holdings-tools { flex-direction: column; }
+  .investment-price-refresh { width: 100%; }
   .investment-filter { width: 100%; }
   .allocation-content { grid-template-columns: 110px 1fr; gap: 16px; }
   .investment-modal-backdrop { padding: 10px; }

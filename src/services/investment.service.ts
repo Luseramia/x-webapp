@@ -8,6 +8,8 @@ export type InvestmentAssetType =
   | "ทองคำ"
   | "อื่น ๆ";
 
+export type InvestmentCurrency = "THB" | "USD";
+
 export interface InvestmentHoldingRecord {
   id: number;
   symbol: string;
@@ -17,6 +19,7 @@ export interface InvestmentHoldingRecord {
   quantity: string;
   total_cost: string;
   current_price: string;
+  currency?: InvestmentCurrency | null;
   purchase_date: string;
   notes: string | null;
 }
@@ -29,6 +32,7 @@ export interface InvestmentHoldingInput {
   quantity: number;
   total_cost: number;
   current_price: number;
+  currency: InvestmentCurrency;
   purchase_date: string;
   notes: string;
 }
